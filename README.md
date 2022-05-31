@@ -1,6 +1,6 @@
-# Looker Extension marketx-extension
+# Looker Extension
 
-marketx-extension is a Looker extension using React and JavaScript.
+This application is a Looker extension using React and JavaScript.
 
 ## Getting Started for Development
 
