@@ -6,41 +6,41 @@ This application is a Looker extension using React and JavaScript.
 
 1. Install the dependencies with [Yarn](https://yarnpkg.com/).
 
-    ```sh
-    yarn install
-    ```
+   ```sh
+   yarn install
+   ```
 
 2. Build the project
 
-    ```sh
-    yarn build
-    ```
+   ```sh
+   yarn build
+   ```
 
 3. Start the development server
 
-    ```sh
-    yarn develop
-    ```
+   ```sh
+   yarn develop
+   ```
 
-    The development server is now running and serving the JavaScript at http://localhost:8080/bundle.js.
+   The development server is now running and serving the JavaScript at http://localhost:8080/bundle.js.
 
 4. Now log in to Looker and create a new project.
 
-    Depending on the version of Looker, a new project can be created under:
+   Depending on the version of Looker, a new project can be created under:
 
-    - **Develop** => **Manage LookML Projects** => **New LookML Project**, or
-    - **Develop** => **Projects** => **New LookML Project**
+   - **Develop** => **Manage LookML Projects** => **New LookML Project**, or
+   - **Develop** => **Projects** => **New LookML Project**
 
-    Select "Blank Project" as the "Starting Point". This creates a new LookML project with no files.
+   Select "Blank Project" as the "Starting Point". This creates a new LookML project with no files.
 
 5. Create a `manifest` file
 
    Either drag and upload the `manifest.lkml` file in this directory into your Looker project, or create a `manifest.lkml` with the same content. Change the `id`, `label`, or `url` as needed.
 
    ```
-    project_name: "marketx-extension"
-    application: marketx-extension {
-        label: "marketx-extension React/JavaScript extension"
+    project_name: "extension-javascript-template"
+    application: extension-javascript-template {
+        label: "React/JavaScript Extension Template"
         url: "http://localhost:8080/bundle.js"
         entitlements: {
           core_api_methods: ["me"]
@@ -74,9 +74,9 @@ To allow other people to use the extension, build the JavaScript bundle file and
 3. Modify your `manifest.lkml` to use `file` instead of `url`:
 
    ```
-    project_name: "marketx-extension"
-    application: marketx-extension {
-        label: "A Looker React/JavaScript extension"
+    project_name: "extension-javascript-template"
+    application: extension-javascript-template {
+        label: "React/JavaScript Extension Template"
         file: "bundle.js"
         entitlements: {
           core_api_methods: ["me"]

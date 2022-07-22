@@ -1,5 +1,5 @@
 {
-  "name": "marketx-extension",
+  "name": "extension-javascript-template",
   "version": "0.0.1",
   "description": "Bootstrapped Looker Extension with React and Javascript",
   "main": "dist/bundle.js",
