@@ -4,7 +4,7 @@ module.exports = (api) => {
   return {
     presets: [
       [
-        "@babel/env",
+        "@babel/preset-env",
         {
           targets: {
             esmodules: true,
