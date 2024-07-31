@@ -139,8 +139,14 @@ export const HelloWorldVisComponent = () => {
 
         {queryValue && vizType && (
           <>
-          <Filters sdk={core40SDK} filterConfig={filterConfig} setFilterConfig={setFilterConfig} filterValues={filterValues} setFilterValues={setFilterValues}
-          model={model} explore={explore}/>
+          <Filters 
+            sdk={core40SDK} 
+            filterConfig={filterConfig} 
+            setFilterConfig={setFilterConfig} 
+            filterValues={filterValues} 
+            setFilterValues={setFilterValues}
+            model={model} 
+            explore={explore}/>
           <DataProvider sdk={core40SDK}>
             <Query
               query={queryValue}
