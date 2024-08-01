@@ -5,14 +5,14 @@
  */
 
 import React from "react";
-import { HelloWorldVisComponent } from "./HelloWorldVisComponent";
+import { TileWithFilters } from "./TileWithFilters";
 import { ExtensionProvider } from "@looker/extension-sdk-react";
 import { hot } from "react-hot-loader/root";
 
 export const App = hot(() => {
   return (
     <ExtensionProvider>
-      <HelloWorldVisComponent />
+      <TileWithFilters />
     </ExtensionProvider>
   );
 });

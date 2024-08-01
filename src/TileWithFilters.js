@@ -11,11 +11,12 @@ import { DataProvider } from "@looker/components-data";
 import { ExtensionContext } from "@looker/extension-sdk-react";
 import { Query, Visualization } from "@looker/visualizations";
 import { Filters } from "./Filters";
+import { vizOptions } from "./vizOptions";
 /**
  * A simple component that renders a Looker custom visualization.
  */
 
-export const HelloWorldVisComponent = () => {
+export const TileWithFilters = () => {
   const {
     core40SDK,
     tileSDK,
@@ -45,16 +46,16 @@ export const HelloWorldVisComponent = () => {
   const getAndSetQueryId = async (querySlug) => {
     // Get the query id from the query slug
     if (filterConfig.length > 0) {
+      
       // Query with filters
       core40SDK.ok(core40SDK.query_for_slug(querySlug)).then((query) => {
         setModel(query.model);
         setExplore(query.view);
+        visualizationSDK.setVisConfig({
+          initialQuery: queryId
+        })
         // Remove the client_id and id from the query object
         const { client_id, id, can, slug, ...initialQuery } = query;
-        
-        console.log('initial query', initialQuery)
-        console.log('filter values', filterValues)
-        console.log('filter config', filterConfig)
         // Create a new query with the filterValues plus incoming filters
         const newQuery = {
           ...initialQuery,
@@ -78,40 +79,39 @@ export const HelloWorldVisComponent = () => {
       setQueryValue(query.id);
       setModel(query.model);
       setExplore(query.view);
+      visualizationSDK.setVisConfig({initialQuery: query.id})
     })
   };
   }
 
   useEffect(() => {
-    if (extensionSDK.lookerHostData.mountPoint === "dashboard-visualization") {
-      console.log("Using a dashboard-visualization mountPoint")
-      const route = extensionSDK.lookerHostData.route
-      const querySlug = route.split("qid=")[1].split("&")[0]
+    const route = extensionSDK.lookerHostData.route
+    if (route && route.includes("qid=")) {
+      console.log("In an explore configuring the viz")
+      const querySlug = route?.split("qid=")[1].split("&")[0]
 
       getAndSetQueryId(querySlug)
     }
-    if (extensionSDK.lookerHostData.mountPoint === "tile") {
-      console.log("Using a tile mountPoint")
-
+    if (!route) {
+      console.log("Rendering in a dashboard")
+      // Load the query id and viz type from the visualization SDK
+      const visConfig = visualizationSDK.visConfig;
+      console.log('initialQuery', visConfig.visConfig.initialQuery)
+      
+      console.log('visConfig1', visConfig.visConfig.filterConfig)
+      const filterConfig = visConfig._visConfig.filterConfig;
+      console.log('filterConfig', filterConfig)
     }
   // Not sure yet if these are the correct things to listen to.
-  }, [tileHostData, filterValues, visualizationData, extensionSDK.lookerHostData]);
+  }, [filterValues, extensionSDK.lookerHostData]);
 
-  const vizOptions = [
-    { value: "looker_line", label: "Line" },
-    { value: "looker_area", label: "Area" },
-    { value: "looker_scatter", label: "Scatter" },
-    { value: "looker_sparkline", label: "Sparkline" },
-    { value: "looker_single_value", label: "Single Value" },
-    { value: "looker_bar", label: "Bar" },
-    { value: "looker_column", label: "Column" },
-    { value: "looker_grid", label: "Table" },
-    { value: "looker_pie", label: "Pie" },
-  ]
-  // console.log('current query id', queryValue);
-  // console.log('current viz type', vizType);
-  // console.log('current filter config', filterConfig);
-  // console.log('current filter values', filterValues);
+  // When the filterConfig changes, store it in the visualization config
+  useEffect(() => {
+    visualizationSDK.setVisConfig({
+      filterConfig: filterConfig
+    })
+  }, [filterConfig])
+
   return (
     <>
       <ComponentsProvider>
