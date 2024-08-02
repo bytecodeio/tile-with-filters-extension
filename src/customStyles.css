@@ -1,0 +1,8 @@
+/* customStyles.css */
+#modal-root > div > div > div > div > div > div {
+    /* Your custom styles here */
+    width: 313px;
+  }
+  #modal-root > div > div > div > div > div > div > label {
+    display: none;
+}

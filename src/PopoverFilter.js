@@ -3,7 +3,7 @@ import { Select, Button, Popover, IconButton } from '@looker/components';
 import { CustomArrowIcon } from './CustomArrowIcon';
 import { DashboardFilter } from '@looker/filter-components';
 import styled from 'styled-components';
-
+import './customStyles.css';
 
 const FlexButton = styled.button`
   box-sizing: border-box;
@@ -25,6 +25,14 @@ const FlexButton = styled.button`
 
 `;
 
+const StyledDashboardFilter = styled(DashboardFilter)`
+  /* Add your custom styles here */
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-radius: 5px;
+  width: 313px;
+`;
+
 export const PopoverFilter = ({index, filter, sdk, onChange, expression}) => {
     const [isOpen, setIsOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
@@ -42,8 +50,10 @@ export const PopoverFilter = ({index, filter, sdk, onChange, expression}) => {
         <div key={index}>
           
           <Popover
+            width="313px"
+            placement='bottom-start'
             content={
-              <DashboardFilter
+              <StyledDashboardFilter
                 filter={filter}
                 sdk={sdk}
                 onChange={onChange}

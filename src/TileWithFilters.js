@@ -127,7 +127,7 @@ export const TileWithFilters = () => {
     const newLookElementId = tileHostData.elementId + ':lookId';
 
     // Save the new context data, starting with the previous state
-    let revisedContextData = { }
+    let revisedContextData = { ...contextData }
 
     if(filterConfig) {
       revisedContextData[newFilterElementId] = JSON.parse(JSON.stringify(filterConfig))

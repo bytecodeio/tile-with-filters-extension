@@ -24,6 +24,12 @@ module.exports = {
         include: /src/,
         sideEffects: false,
       },
+      {
+        test: /\.css$/,
+        use: ["style-loader", "css-loader"],
+        exclude: /node_modules/,
+        include: /src/,
+      },
     ],
   },
   resolve: {
