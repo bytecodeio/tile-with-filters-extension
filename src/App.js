@@ -8,11 +8,14 @@ import React from "react";
 import { TileWithFilters } from "./TileWithFilters";
 import { ExtensionProvider } from "@looker/extension-sdk-react";
 import { hot } from "react-hot-loader/root";
+import { ComponentsProvider } from "@looker/components";
 
 export const App = hot(() => {
   return (
     <ExtensionProvider>
-      <TileWithFilters />
+      <ComponentsProvider>
+        <TileWithFilters />
+      </ComponentsProvider>
     </ExtensionProvider>
   );
 });
