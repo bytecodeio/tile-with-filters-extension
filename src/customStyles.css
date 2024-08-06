@@ -6,3 +6,15 @@
   #modal-root > div > div > div > div > div > div > label {
     display: none;
 }
+
+input[type="checkbox"][aria-checked="true"] + div {
+  /* Your custom styles here */
+  background-color: #0891b3;
+  border-color:#0891b3;
+  color: white;
+}
+
+div[role="group"] {
+  row-gap: 0.5rem;
+  margin: 0.5rem;
+}

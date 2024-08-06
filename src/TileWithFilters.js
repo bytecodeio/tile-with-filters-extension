@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
 import {
   ComponentsProvider,
   FieldText,
@@ -76,12 +76,13 @@ export const TileWithFilters = () => {
   // The model and explore are used to set the filter configuration. They should not change once set.
   const [explore, setExplore] = useState();
 
+
   // Useful tile details from the tile host data 
-  const { dashboardFilters, dashboardRunState, isDashboardEditing } = tileHostData
+  const { dashboardFilters, dashboardRunState, isDashboardEditing, dashboardId } = tileHostData
 
   // This function is used to find the final query to be used in the visualization
   // It also sets the model and explore for filter configuration
-  const createFinalQuery = async () => {
+  const createFinalQuery = useCallback(async () => {
 
     if (!initialQuery) {
       console.error('No initial query provided')
@@ -96,7 +97,7 @@ export const TileWithFilters = () => {
     // TODO: handle dashboardFilters also
     if (!filterValues || filterValues.length == 0) {
       // Query without filters
-      setFinalQuerySlug(initialQuerySlug)
+      if (initialQuerySlug !== finalQuerySlug) setFinalQuerySlug(initialQuerySlug)
       setClient_id(initialQuery.client_id)
     } else {
       // Create a new query with the filterValues plus incoming filters
@@ -120,7 +121,7 @@ export const TileWithFilters = () => {
       // console.log('newQuery slug', newQuery.slug)
 
     }
-  }
+  },[initialQuery, initialQuerySlug, filterValues, model, explore])
 
   // This function takes the state and persists it into the extension context
   const persistStateToContext = async () => {
@@ -263,7 +264,9 @@ export const TileWithFilters = () => {
           filterValues={filterValues}
           setFilterValues={setFilterValues}
           model={model}
-          explore={explore} />
+          explore={explore} 
+          dashboardId={dashboardId}
+        />
         {client_id && embedUrl && (
           <EmbedVisualization embedUrl={embedUrl} lookId={initialLookId} query={client_id} />
         )}

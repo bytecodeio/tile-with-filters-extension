@@ -6,7 +6,7 @@ import styled from 'styled-components';
 import './customStyles.css';
 import { set } from 'lodash';
 
-const All = 'All';
+
 const FlexButton = styled.button`
   box-sizing: border-box;
   display: flex;
@@ -29,13 +29,14 @@ const FlexButton = styled.button`
 
 const StyledFilter = styled(Filter)`
   /* Add your custom styles here */
-  background-color: #f0f0f0;
+  background-color: #0891b3;
   padding: 10px;
   border-radius: 5px;
   width: 313px;
+  --ripple-color: #0891b3;
 `;
 
-export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression }) => {
+export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression, nameForAllCategories }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [previousValues, setPreviousValues] = useState([]);
@@ -46,7 +47,7 @@ export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression })
     filter,
     sdk,
   });
-  
+
   useEffect( () => {
     if (suggestableProps?.suggestions?.length > 0 && suggestions.length === 0) {
       // console.log('Setting suggestions:', suggestableProps.suggestions);
@@ -57,8 +58,8 @@ export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression })
 
   const { id, name = '', type, field, ui_config } = filter;
 
-  const customSuggestions = (ui_config.type === 'checkboxes') ?
-    suggestions ? [All, ...suggestions] : [All] :
+  const customSuggestions = (ui_config.type === 'checkboxes' && nameForAllCategories.length > 0) ?
+    suggestions ? [nameForAllCategories, ...suggestions] : [nameForAllCategories] :
     suggestions;
 
   const extendedSuggestableProps = {
@@ -71,23 +72,21 @@ export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression })
     // console.log('handleFilterChange value:', value, 'previousValues:', previousValues);
     if (ui_config.type === 'checkboxes') {
       const valueArray = value.split(',');
-      if (valueArray?.includes(All) ) {
-        // console.log('All selected:', suggestions);
-        changeHandler(suggestions.join(',') + ',all');
-      } else if (!valueArray?.includes(All) && previousValues?.includes(All)) {
+      console.log(valueArray, previousValues, nameForAllCategories);
+      if (valueArray?.includes(nameForAllCategories) ) {
+        changeHandler(suggestions.join(',') + ',' + nameForAllCategories);
+      } else if (!valueArray?.includes(nameForAllCategories) && previousValues?.includes(nameForAllCategories)) {
         changeHandler('');
       } else {
         changeHandler(value);
       }
       
       setPreviousValues(() => {
-        // console.log('Updating previousValues:', value);
         return value;
       });
     } else {
       changeHandler(value);
       setPreviousValues(() => {
-        // console.log('Updating previousValues:', value);
         return value;
       });
     };
