@@ -5,7 +5,7 @@ import {
   Heading,
 } from "@looker/components";
 import { ExtensionContext } from "@looker/extension-sdk-react";
-import { Filters } from "./Filters";
+import Filters from "./Filters";
 import styled from "styled-components";
 import EmbedVisualization from './EmbedVisualization'; 
 
@@ -55,14 +55,25 @@ export const TileWithFilters = () => {
   // console.log("tileSDK", tileSDK);
   // console.log("extensionSDK", extensionSDK);
 
+  // React state to hold the initial look id, embed url, initial query slug, final query slug, client_id, filter config, filter values, model, and explore
   const [initialLookId, setInitialLookId] = useState();
+  // The Embed URL is used to render the visualization
   const [embedUrl, setEmbedUrl] = useState();
+  // The initial query slug is used to create the final query. It should not change once set.
   const [initialQuerySlug, setInitialQuerySlug] = useState();
+  // The initial query is used to create the final query. It should not change once set.
+  const [initialQuery, setInitialQuery] = useState();
+  // The final query slug is used to render the visualization. It changes with filter values.
   const [finalQuerySlug, setFinalQuerySlug] = useState();
+  // The client_id is another unique identifier for the query. It is used to render the visualization. It changes with filter values.
   const [client_id, setClient_id] = useState();
+  // The filterConfig is the filter configuration for the visualization. It only changes if filters are added to the tile.
   const [filterConfig, setFilterConfig] = useState();
+  // The filterValues are the current filter values for the visualization. It changes with user interaction.
   const [filterValues, setFilterValues] = useState({});
+  // The model and explore are used to set the filter configuration. They should not change once set.
   const [model, setModel] = useState();
+  // The model and explore are used to set the filter configuration. They should not change once set.
   const [explore, setExplore] = useState();
 
   // Useful tile details from the tile host data 
@@ -72,12 +83,12 @@ export const TileWithFilters = () => {
   // It also sets the model and explore for filter configuration
   const createFinalQuery = async () => {
 
-    if (!initialQuerySlug) {
-      console.error('No query slug provided')
+    if (!initialQuery) {
+      console.error('No initial query provided')
       return
     }
 
-    const initialQuery = await core40SDK.ok(core40SDK.query_for_slug(initialQuerySlug))
+    console.log('Creating final query with filterValues', filterValues)
     // Set the model and explore. These should be immutable once set.
     !model && initialQuery?.model && setModel(initialQuery.model);
     !explore && initialQuery?.view && setExplore(initialQuery.view);
@@ -99,13 +110,14 @@ export const TileWithFilters = () => {
           ...filterValues
         }
       }
+      // console.log(newQueryData)
       const newQuery = await core40SDK.ok(core40SDK.create_query(
         newQueryData
       ))
       // Set the new query in local state/ don't persist this transient query
       setFinalQuerySlug(newQuery.slug);
       setClient_id(newQuery.client_id);
-      console.log('newQuery slug', newQuery.slug)
+      // console.log('newQuery slug', newQuery.slug)
 
     }
   }
@@ -113,15 +125,14 @@ export const TileWithFilters = () => {
   // This function takes the state and persists it into the extension context
   const persistStateToContext = async () => {
     const elementId = tileHostData.elementId
-    console.log(tileHostData)
     if (!elementId) {
       console.error('No elementId found in tileHostData, skipping persistStateToContext')
       return
     }
-    console.log('setting contextData for elementId', tileHostData.elementId)
+    // console.log('setting contextData for elementId', tileHostData.elementId)
     
     const contextData = extensionSDK.getContextData()
-    console.log('Previous contextData', contextData)
+    // console.log('Previous contextData', contextData)
 
     const newFilterElementId = tileHostData.elementId + ':filterConfig'
     const newLookElementId = tileHostData.elementId + ':lookId';
@@ -134,11 +145,11 @@ export const TileWithFilters = () => {
     }
     revisedContextData[newLookElementId] = initialLookId
 
-    console.log('revisedContextData', revisedContextData)
+    // console.log('revisedContextData', revisedContextData)
     extensionSDK.saveContextData(revisedContextData)
     
 
-    console.log('New contextData', extensionSDK.getContextData())
+    // console.log('New contextData', extensionSDK.getContextData())
   }
 
   // This function takes the context and populates the initial query slug and filter config
@@ -150,7 +161,7 @@ export const TileWithFilters = () => {
       return
     }
     const contextData = await extensionSDK.getContextData();
-    console.log('contextData inside populateStateFromContext', contextData);
+    // console.log('contextData inside populateStateFromContext', contextData);
 
     const newFilterConfigElementId = elementId + ':filterConfig';
     const newLookID = elementId + ':lookId';
@@ -158,13 +169,25 @@ export const TileWithFilters = () => {
     // Check and set initialQuerySlug if not already assigned
     if (!initialLookId && contextData[newLookID]) {
       setInitialLookId(contextData[newLookID]);
-      console.log('Setting initial look id from contextData', contextData[newLookID]);
+      // console.log('Setting initial look id from contextData', contextData[newLookID]);
     }
 
     // Check and set filterConfig if not already assigned
     if (contextData[newFilterConfigElementId] && contextData[newFilterConfigElementId].length > 0) {
       setFilterConfig(contextData[newFilterConfigElementId]);
-      console.log('Setting filterConfig from contextData', contextData[newFilterConfigElementId]);
+      // console.log('Setting filterConfig from contextData', contextData[newFilterConfigElementId]);
+      // PUll the default_value and dimension or measure from each filterConfig, if it exists and set it in filterValues
+      const newFilterValues = contextData[newFilterConfigElementId].reduce((acc, filter) => {
+        if (filter.default_value) {
+          if (filter.dimension) {
+            acc[filter.dimension] = filter.default_value
+          } else if (filter.measure) {
+            acc[filter.measure] = filter.default_value
+          }
+        }
+        return acc
+      }, {})
+      setFilterValues(newFilterValues)
     }
   }
 
@@ -183,7 +206,7 @@ export const TileWithFilters = () => {
 
   // This hook with create a final query when filter value or the initial query change
   useEffect(() => {
-    if (initialQuerySlug && initialLookId) {
+    if (initialQuery && initialLookId) {
       createFinalQuery()
     }
   }, [filterValues, dashboardFilters, initialLookId, initialQuerySlug]);
@@ -192,17 +215,30 @@ export const TileWithFilters = () => {
     const fetchInitialQueryFromLook = async () => {
       let response = await core40SDK.ok(core40SDK.look(
         initialLookId, 'query,embed_url'))
-      console.log(response)
-      console.log('setting embedUrl', response.embed_url)
-      console.log('setting initialQuerySlug', response.query.slug)
+      //  console.log('setting embedUrl', response.embed_url)
+      // console.log('setting initialQuerySlug', response.query.slug)
       setInitialQuerySlug(response.query.slug)
       setEmbedUrl(response.embed_url)
+      if (!initialQuery) {
+        let newQueryResponse = await core40SDK.ok(core40SDK.query_for_slug(response.query.slug))
+        setInitialQuery(newQueryResponse)
+        // console.log('setting initialQuery', newQueryResponse)
+      }         
     }
+
     console.log('initialLookId', initialLookId)
     if (initialLookId && !initialQuerySlug) {
       fetchInitialQueryFromLook()
     }
   }, [initialLookId])
+
+// use effects to watch the filterConfig and filterValues
+  useEffect(() => {
+    console.log('filterConfig:', filterConfig)
+  }, [filterConfig])
+  useEffect(() => {
+    console.log('filterValues:', filterValues)
+  }, [filterValues])
 
   return (
     <>

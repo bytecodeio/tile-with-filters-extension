@@ -29,17 +29,15 @@ export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, fil
 
 	useEffect(() => {
 		// Fetch eligible filter fields from the Looker API
-		console.log('Fetching dashboard filter configs')
+		// console.log('Fetching dashboard filter configs')
 		core40SDK?.ok(core40SDK.dashboard('980', 'dashboard_filters')).then(response => {
-			console.log('Configured filters:', response.dashboard_filters)
+			// console.log('Configured filters:', response.dashboard_filters)
 			setConfiguredDashboardFilters(response.dashboard_filters)
 		})
 	}, [core40SDK, model, explore]);
 
 
 	const handleAddFilter = () => {
-		console.log('selectedField', selectedField);
-		console.log('configuredDashboardFilters', configuredDashboardFilters);
 		const newFilterConfig = configuredDashboardFilters.filter((filter) => filter.id == (selectedField))
 		if (!filterConfig || filterConfig.length === 0) {
 			setFilterConfig([...newFilterConfig]);
@@ -49,7 +47,6 @@ export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, fil
 		setSelectedField('');
 
 		// determine if the filterConfig has a default, and add a filter value if it does
-		console.log('newfilterconfig', newFilterConfig);
 		if (newFilterConfig[0]?.default_value?.length > 0) {
 			if (newFilterConfig[0]?.dimension?.length > 1) {
 				setFilterValues({ ...filterValues, [newFilterConfig[0].dimension]: newFilterConfig[0].default_value })
@@ -62,6 +59,19 @@ export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, fil
 	//   // Filter configuredDashboardFilters based on filterConfig
 	//   const preconfiguredFilters = configuredDashboardFilters.filter((filter, index) => filterConfig?.includes(filter.id))
 
+	const getFieldFilterChangeHandler = (filter) => (value) => {
+		// The view and field are separated by a period. The field may come from a dimension or a measure
+		const viewFieldId = filter.dimension ? `${filter.dimension}` : `${filter.measure}`;
+		setFilterValues((prevFilterValues) => {
+			const newFilterValues = { ...prevFilterValues };
+			console.log('previous Filters:', prevFilterValues);
+			console.log('Setting filter value:', viewFieldId, value);
+			newFilterValues[viewFieldId] = value;
+			console.log('new Filters:', newFilterValues);
+			return newFilterValues;
+		  });
+	  }
+
 	return (
 		<div>
 			{isDashboardEditing && (
@@ -70,7 +80,7 @@ export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, fil
 					<Select
 						name="filterField"
 						value={selectedField}
-						onChange={(value) => setSelectedField(value)}
+						onChange={setSelectedField}
 						options={configuredDashboardFilters && configuredDashboardFilters.map(field => ({ value: field.id, label: field.title }))}
 						placeholder="Select Filter Field"
 					/>
@@ -85,7 +95,7 @@ export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, fil
 						index={index}
 						filter={filter}
 						sdk={core40SDK}
-						onChange={(e) => { console.log('TODO: filter value change should update local state only', e) }}
+						changeHandler={getFieldFilterChangeHandler(filter)}
 						expression={filter?.name ? filterValues[filter?.name] : ''}
 					/>
 					))}
@@ -97,4 +107,4 @@ export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, fil
 	);
 };
 
-export default Filters;
+export default React.memo(Filters);
