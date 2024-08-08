@@ -5,14 +5,12 @@ import PopoverFilter from './PopoverFilter';
 import styled from 'styled-components';
 
 const FilterFlexHolder = styled.div`
-/* Frame 1000006138 */
-
 /* Auto layout */
 display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 
-width: 634px;
+max-width: 634px;
 height: auto;
 
 `

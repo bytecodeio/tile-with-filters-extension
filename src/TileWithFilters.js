@@ -3,11 +3,12 @@ import {
   ComponentsProvider,
   FieldText,
   Heading,
+  SpaceVertical,
 } from "@looker/components";
 import { ExtensionContext } from "@looker/extension-sdk-react";
 import Filters from "./Filters";
 import styled from "styled-components";
-import EmbedVisualization from './EmbedVisualization'; 
+import EmbedVisualization from './EmbedVisualization';
 
 // Define the styled component
 const TileFrame = styled.div`
@@ -17,12 +18,20 @@ const TileFrame = styled.div`
   align-items: flex-start;
   padding: 20px;
   gap: 9px;
-  width: 700px;
-  height: 409px;
+  width: auto;
+  height: auto;
   background: #FFFFFF;
   flex: none;
   order: 1;
   flex-grow: 1;
+`;
+
+const FiltersContainer = styled.div`
+  width: 100%;
+  padding-bottom: 7px;
+  background-color: white;
+  z-index: 1;
+  position: relative;
 `;
 
 /**
@@ -58,7 +67,7 @@ export const TileWithFilters = () => {
   // React state to hold the initial look id, embed url, initial query slug, final query slug, client_id, filter config, filter values, model, and explore
   const [initialLookId, setInitialLookId] = useState();
   // The Embed URL is used to render the visualization
-  const [embedUrl, setEmbedUrl] = useState();
+  const [host, setHost] = useState();
   // The initial query slug is used to create the final query. It should not change once set.
   const [initialQuerySlug, setInitialQuerySlug] = useState();
   // The initial query is used to create the final query. It should not change once set.
@@ -75,10 +84,15 @@ export const TileWithFilters = () => {
   const [model, setModel] = useState();
   // The model and explore are used to set the filter configuration. They should not change once set.
   const [explore, setExplore] = useState();
+  // The showInstructions flag is used to show the instructions when the tile is saved and the user is in edit mode
+  const [showInstructions, setShowInstructions] = useState(false);
 
-
+  // This function toggles the instructions
+  const toggleInstructions = () => {
+    setShowInstructions(!showInstructions)
+  }
   // Useful tile details from the tile host data 
-  const { dashboardFilters, dashboardRunState, isDashboardEditing, dashboardId } = tileHostData
+  const { dashboardFilters, elementId, isDashboardEditing, dashboardId } = tileHostData
 
   // This function is used to find the final query to be used in the visualization
   // It also sets the model and explore for filter configuration
@@ -101,37 +115,37 @@ export const TileWithFilters = () => {
       setClient_id(initialQuery.client_id)
     } else {
       // Create a new query with the filterValues plus incoming filters
-      const { client_id, id, can, slug, ...strippedQuery } = initialQuery;
-
+      const { client_id, id, can, slug, expanded_share_url, ...strippedQuery } = initialQuery;
+      console.log(filterConfig)
       // Create a new query with the filterValues plus incoming filters
       const newQueryData = {
         ...strippedQuery,
         filters: {
-          ...strippedQuery.filters,
           ...filterValues
-        }
+        },
+
       }
-      // console.log(newQueryData)
+      console.log(newQueryData)
       const newQuery = await core40SDK.ok(core40SDK.create_query(
         newQueryData
       ))
+      console.log('newQuery', newQuery)
       // Set the new query in local state/ don't persist this transient query
       setFinalQuerySlug(newQuery.slug);
       setClient_id(newQuery.client_id);
       // console.log('newQuery slug', newQuery.slug)
 
     }
-  },[initialQuery, initialQuerySlug, filterValues, model, explore])
+  }, [initialQuery, initialQuerySlug, filterValues, model, explore])
 
   // This function takes the state and persists it into the extension context
   const persistStateToContext = async () => {
-    const elementId = tileHostData.elementId
     if (!elementId) {
       console.error('No elementId found in tileHostData, skipping persistStateToContext')
       return
     }
     // console.log('setting contextData for elementId', tileHostData.elementId)
-    
+
     const contextData = extensionSDK.getContextData()
     // console.log('Previous contextData', contextData)
 
@@ -141,14 +155,14 @@ export const TileWithFilters = () => {
     // Save the new context data, starting with the previous state
     let revisedContextData = { ...contextData }
 
-    if(filterConfig) {
+    if (filterConfig) {
       revisedContextData[newFilterElementId] = JSON.parse(JSON.stringify(filterConfig))
     }
     revisedContextData[newLookElementId] = initialLookId
 
     // console.log('revisedContextData', revisedContextData)
     extensionSDK.saveContextData(revisedContextData)
-    
+
 
     // console.log('New contextData', extensionSDK.getContextData())
   }
@@ -167,8 +181,15 @@ export const TileWithFilters = () => {
     const newFilterConfigElementId = elementId + ':filterConfig';
     const newLookID = elementId + ':lookId';
 
+    if (!contextData) {
+      // initialize with emtpy context data
+      extensionSDK.saveContextData({})
+      console.error('No context data found in populateStateFromContext')
+      return
+    }
+
     // Check and set initialQuerySlug if not already assigned
-    if (!initialLookId && contextData[newLookID]) {
+    if (!initialLookId && contextData && contextData[newLookID]) {
       setInitialLookId(contextData[newLookID]);
       // console.log('Setting initial look id from contextData', contextData[newLookID]);
     }
@@ -215,16 +236,16 @@ export const TileWithFilters = () => {
   useEffect(() => {
     const fetchInitialQueryFromLook = async () => {
       let response = await core40SDK.ok(core40SDK.look(
-        initialLookId, 'query,embed_url'))
-      //  console.log('setting embedUrl', response.embed_url)
-      // console.log('setting initialQuerySlug', response.query.slug)
+        initialLookId, 'query,image_embed_url'))
+      console.log('response from initial look', response)
       setInitialQuerySlug(response.query.slug)
-      setEmbedUrl(response.embed_url)
+      const newEmbedUrl = new URL(response.image_embed_url)
+      setHost(newEmbedUrl.host)
       if (!initialQuery) {
         let newQueryResponse = await core40SDK.ok(core40SDK.query_for_slug(response.query.slug))
         setInitialQuery(newQueryResponse)
-        // console.log('setting initialQuery', newQueryResponse)
-      }         
+        console.log('setting initialQuery', newQueryResponse)
+      }
     }
 
     console.log('initialLookId', initialLookId)
@@ -233,44 +254,91 @@ export const TileWithFilters = () => {
     }
   }, [initialLookId])
 
-// use effects to watch the filterConfig and filterValues
-  useEffect(() => {
-    console.log('filterConfig:', filterConfig)
-  }, [filterConfig])
+  // uncomment to watch the filterConfig 
+  // useEffect(() => {
+  //   console.log('filterConfig:', filterConfig)
+  // }, [filterConfig])
+  // uncomment to watch the filterValues
   useEffect(() => {
     console.log('filterValues:', filterValues)
   }, [filterValues])
+  // uncomment to watch client_id
+  useEffect(() => {
+    console.log('client_id:', client_id)
+  })
+  // uncomment to watch host
+  // useEffect(() => {
+  // console.log('host:', host)
+  // })
+
+  // If the elementId is not an integer, the tile is not saved and the user is in edit mode
+  const isSaved = Number.isInteger(Number(elementId))
 
   return (
     <>
       <ComponentsProvider>
         <TileFrame>
-        {isDashboardEditing && (
-          <div>
-            <Heading>Looker Visualization Component With Filters</Heading>
+          {isDashboardEditing && (!isSaved || showInstructions) && (
+            <div>
+              <Heading>Looker Visualization Component With Filters</Heading>
+              <h4>Instructions</h4>
+              <p>
+                This extension requires a few steps for configuration:
+              </p>
+              <ol>
+                <li>Save the dashboard with this extension tile.</li>
+                <li>Configure the 'starting' tile. This is the visualization you want to add filters to.
+                  <ol>
+                    <li>Create the visualization tile in an explore.</li>
+                    <li>Add the tile to this Dashboard.</li>
+                    <li>Also save the tile as a Look.</li>
+                    <li>Note the Look Id.</li>
+                  </ol>
+                </li>
+                <li>Configure the extension tile with filters
+                  <ol>
+                    <li>Copy the Look Id into the Look ID field.</li>
+                    <li>Add filters to the dashboard, configured exactly as you want them to appear in the tile.</li>
+                    <li>Select the filters from the top of the dashboard and click 'Add Filter'.</li>
+                    <li>Remove the filters from the dashboard (they are now in the tile).</li>
+                  </ol>
+                </li>
+                <li>Save the dashboard.</li>
+              </ol>
+            </div>
+          )}
+          {isDashboardEditing && isSaved && (
+            <SpaceVertical>
+              <button onClick={toggleInstructions}>
+                {showInstructions ? 'Hide Instructions' : 'Show Instructions'}
+              </button>
 
-            <FieldText
-              name="lookId"
-              value={initialLookId}
-              onChange={(event) => setInitialLookId(Number(event.target.value))}
-              label="Look ID - Copy the id from a Look URL and paste it here."
-            />
-          </div>
-        )}
-        <Filters
-          isDashboardEditing={isDashboardEditing}
-          filterConfig={filterConfig}
-          setFilterConfig={setFilterConfig}
-          filterValues={filterValues}
-          setFilterValues={setFilterValues}
-          model={model}
-          explore={explore} 
-          dashboardId={dashboardId}
-        />
-        {client_id && embedUrl && (
-          <EmbedVisualization embedUrl={embedUrl} lookId={initialLookId} query={client_id} />
-        )}
-        
+              <FieldText
+                name="lookId"
+                value={initialLookId}
+                onChange={(event) => setInitialLookId(Number(event.target.value))}
+                label="Look ID - Copy the id from a Look URL and paste it here."
+              />
+            </SpaceVertical>
+          )}
+          {isSaved && (
+            <FiltersContainer>
+              <Filters
+                isDashboardEditing={isDashboardEditing}
+                filterConfig={filterConfig}
+                setFilterConfig={setFilterConfig}
+                filterValues={filterValues}
+                setFilterValues={setFilterValues}
+                model={model}
+                explore={explore}
+                dashboardId={dashboardId}
+              />
+            </FiltersContainer>
+          )}
+          {client_id && host && (
+            <EmbedVisualization host={host} lookId={initialLookId} query={client_id} />
+          )}
+
         </TileFrame>
       </ComponentsProvider>
     </>

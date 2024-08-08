@@ -15,7 +15,9 @@ const FlexButton = styled.button`
   justify-content: space-between;
   padding: 4px 10px;
   gap: 10px;
-  width: 313px;
+  max-width: 313px;
+  width: 100%;
+  min-width: 100px;
   height: 32px;
   background: #FFFFFF;
   border: 1px solid #CBD5E1;
@@ -32,9 +34,16 @@ const StyledFilter = styled(Filter)`
   background-color: #0891b3;
   padding: 10px;
   border-radius: 5px;
-  width: 313px;
+  max-width: 313px;
   --ripple-color: #0891b3;
 `;
+
+const FieldCount = styled.span`
+  font-size: 12px;
+  background: #F3F4F6;
+  padding: 4px 8px;
+  margin-right: 8px;
+`
 
 export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression, nameForAllCategories }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -132,6 +141,8 @@ export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression, n
     setIsOpen(false);
   };
 
+  const fieldCountNumber = stateProps.expression ? stateProps.expression.split(',').length : 0;
+
     return (
       <div key={index}>
 
@@ -154,7 +165,12 @@ export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression, n
         >
           <FlexButton onClick={handleClick}>
             <span>{filter.name}</span>
-            <CustomArrowIcon />
+            <span>
+              {fieldCountNumber > 0  && (
+                <FieldCount>{stateProps.expression ? stateProps.expression.split(',').length : 0}</FieldCount>
+              )}
+              <CustomArrowIcon />
+            </span>
           </FlexButton>
         </Popover>
       </div>

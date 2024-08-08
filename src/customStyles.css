@@ -1,4 +1,13 @@
 /* customStyles.css */
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap');
+
+* {
+  font-family: 'Open Sans', sans-serif;
+}
+body {
+  font-family: 'Open Sans', sans-serif;
+}
+
 #modal-root > div > div > div > div > div > div {
     /* Your custom styles here */
     width: 313px;
@@ -18,3 +27,4 @@ div[role="group"] {
   row-gap: 0.5rem;
   margin: 0.5rem;
 }
+
