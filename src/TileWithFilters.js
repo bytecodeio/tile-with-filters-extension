@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useCallback } from "react";
+import React, { useEffect, useState, useContext, useCallback, useMemo } from "react";
 import {
   ComponentsProvider,
   FieldText,
@@ -42,6 +42,7 @@ The dashboard tile can then 'select' a filter from the top of the Dashboard.
 The filter config will be copied by the tile, and can then be removed from the dashboard.
 New filters can be copied into the tile when in dashboard edit mode.
 The original Look can be updated to automatically update the viz.
+Filters in the original look should be removed if they are going to be dynamic.
  */
 
 export const TileWithFilters = () => {
@@ -55,25 +56,12 @@ export const TileWithFilters = () => {
     lookerHostData
   } = useContext(ExtensionContext);
 
-  // console.log('extensionContext', ExtensionContext);
-  // console.log("lookerHostData", lookerHostData);
-  // console.log("tileHostData", tileHostData);
-  // console.log("visualizationData", visualizationData);
-  // console.log("visualizationSDK", visualizationSDK);
-  // console.log("core40SDK", core40SDK);
-  // console.log("tileSDK", tileSDK);
-  // console.log("extensionSDK", extensionSDK);
-
   // React state to hold the initial look id, embed url, initial query slug, final query slug, client_id, filter config, filter values, model, and explore
   const [initialLookId, setInitialLookId] = useState();
   // The Embed URL is used to render the visualization
   const [host, setHost] = useState();
-  // The initial query slug is used to create the final query. It should not change once set.
-  const [initialQuerySlug, setInitialQuerySlug] = useState();
   // The initial query is used to create the final query. It should not change once set.
   const [initialQuery, setInitialQuery] = useState();
-  // The final query slug is used to render the visualization. It changes with filter values.
-  const [finalQuerySlug, setFinalQuerySlug] = useState();
   // The client_id is another unique identifier for the query. It is used to render the visualization. It changes with filter values.
   const [client_id, setClient_id] = useState();
   // The filterConfig is the filter configuration for the visualization. It only changes if filters are added to the tile.
@@ -96,47 +84,43 @@ export const TileWithFilters = () => {
 
   // This function is used to find the final query to be used in the visualization
   // It also sets the model and explore for filter configuration
-  const createFinalQuery = useCallback(async () => {
+  const createFinalQuery = useCallback(async (initialQueryOverride = null, filterValuesOverride = null) => {
 
-    if (!initialQuery) {
+    if (!initialQuery && !initialQueryOverride) {
       console.error('No initial query provided')
       return
     }
 
-    console.log('Creating final query with filterValues', filterValues)
+    const query = initialQueryOverride || initialQuery
+    const filters = filterValuesOverride || filterValues
+
+    console.log('Creating final query with filters', filters)
     // Set the model and explore. These should be immutable once set.
-    !model && initialQuery?.model && setModel(initialQuery.model);
-    !explore && initialQuery?.view && setExplore(initialQuery.view);
+    !model && query?.model && setModel(query.model);
+    !explore && query?.view && setExplore(query.view);
 
     // TODO: handle dashboardFilters also
-    if (!filterValues || filterValues.length == 0) {
-      // Query without filters
-      if (initialQuerySlug !== finalQuerySlug) setFinalQuerySlug(initialQuerySlug)
-      setClient_id(initialQuery.client_id)
+    if (!filters || filters.length == 0) {
+      setClient_id(query.client_id)
     } else {
-      // Create a new query with the filterValues plus incoming filters
-      const { client_id, id, can, slug, expanded_share_url, ...strippedQuery } = initialQuery;
-      console.log(filterConfig)
-      // Create a new query with the filterValues plus incoming filters
+      const { client_id, id, can, slug, expanded_share_url, ...strippedQuery } = query;
+      // Create a new query with the filters
       const newQueryData = {
         ...strippedQuery,
         filters: {
-          ...filterValues
+          ...filters
         },
-
       }
-      console.log(newQueryData)
       const newQuery = await core40SDK.ok(core40SDK.create_query(
         newQueryData
       ))
       console.log('newQuery', newQuery)
       // Set the new query in local state/ don't persist this transient query
-      setFinalQuerySlug(newQuery.slug);
       setClient_id(newQuery.client_id);
       // console.log('newQuery slug', newQuery.slug)
 
     }
-  }, [initialQuery, initialQuerySlug, filterValues, model, explore])
+  }, [filterValues, model, explore])
 
   // This function takes the state and persists it into the extension context
   const persistStateToContext = async () => {
@@ -144,10 +128,8 @@ export const TileWithFilters = () => {
       console.error('No elementId found in tileHostData, skipping persistStateToContext')
       return
     }
-    // console.log('setting contextData for elementId', tileHostData.elementId)
 
     const contextData = extensionSDK.getContextData()
-    // console.log('Previous contextData', contextData)
 
     const newFilterElementId = tileHostData.elementId + ':filterConfig'
     const newLookElementId = tileHostData.elementId + ':lookId';
@@ -160,11 +142,7 @@ export const TileWithFilters = () => {
     }
     revisedContextData[newLookElementId] = initialLookId
 
-    // console.log('revisedContextData', revisedContextData)
     extensionSDK.saveContextData(revisedContextData)
-
-
-    // console.log('New contextData', extensionSDK.getContextData())
   }
 
   // This function takes the context and populates the initial query slug and filter config
@@ -188,7 +166,7 @@ export const TileWithFilters = () => {
       return
     }
 
-    // Check and set initialQuerySlug if not already assigned
+    // Check and set initialLookId if not already assigned
     if (!initialLookId && contextData && contextData[newLookID]) {
       setInitialLookId(contextData[newLookID]);
       // console.log('Setting initial look id from contextData', contextData[newLookID]);
@@ -196,8 +174,7 @@ export const TileWithFilters = () => {
 
     // Check and set filterConfig if not already assigned
     if (contextData[newFilterConfigElementId] && contextData[newFilterConfigElementId].length > 0) {
-      setFilterConfig(contextData[newFilterConfigElementId]);
-      // console.log('Setting filterConfig from contextData', contextData[newFilterConfigElementId]);
+      
       // PUll the default_value and dimension or measure from each filterConfig, if it exists and set it in filterValues
       const newFilterValues = contextData[newFilterConfigElementId].reduce((acc, filter) => {
         if (filter.default_value) {
@@ -209,70 +186,48 @@ export const TileWithFilters = () => {
         }
         return acc
       }, {})
-      setFilterValues(newFilterValues)
+
+      const unfilteredQueryResponse = await core40SDK.ok(core40SDK.look(
+        contextData[newLookID], 'query,image_embed_url'))
+
+      const newEmbedUrl = new URL(unfilteredQueryResponse.image_embed_url)
+      setInitialStateSimultaneously(unfilteredQueryResponse, newFilterValues, newEmbedUrl, unfilteredQueryResponse.query, contextData[newFilterConfigElementId], newFilterValues)
     }
   }
 
-  // This Hook will set the initial react state based on the context data
+  const setInitialStateSimultaneously = (unfilteredQueryResponse, newFilterValues, newEmbedUrl, query, filterConfig, filterValues) => {
+        // Create the (first) final query with the filter values
+        console.log('calling createFinalQuery with newQueryResponse', unfilteredQueryResponse.query, newFilterValues)
+        createFinalQuery(unfilteredQueryResponse.query, newFilterValues)
+        setInitialQuery(query)
+        setFilterConfig(filterConfig)
+        setFilterValues(filterValues)
+        setHost(newEmbedUrl.host)
+  }
+
+  // This Hook will set the initial react state based on the context data. Should fire once.
   useEffect(() => {
-    populateStateFromContext()
-    // it should only fire once.
+    if (tileHostData.elementId) populateStateFromContext()
   }, [tileHostData.elementId])
 
   // This Hook will persist the react state into context when necessary
   useEffect(() => {
-    if (initialLookId || filterConfig) {
-      persistStateToContext()
-    }
+    if (initialLookId || filterConfig) persistStateToContext()
   }, [initialLookId, filterConfig, tileHostData.elementId])
 
   // This hook with create a final query when filter value or the initial query change
   useEffect(() => {
-    if (initialQuery && initialLookId) {
-      createFinalQuery()
-    }
-  }, [filterValues, dashboardFilters, initialLookId, initialQuerySlug]);
-
-  useEffect(() => {
-    const fetchInitialQueryFromLook = async () => {
-      let response = await core40SDK.ok(core40SDK.look(
-        initialLookId, 'query,image_embed_url'))
-      console.log('response from initial look', response)
-      setInitialQuerySlug(response.query.slug)
-      const newEmbedUrl = new URL(response.image_embed_url)
-      setHost(newEmbedUrl.host)
-      if (!initialQuery) {
-        let newQueryResponse = await core40SDK.ok(core40SDK.query_for_slug(response.query.slug))
-        setInitialQuery(newQueryResponse)
-        console.log('setting initialQuery', newQueryResponse)
-      }
-    }
-
-    console.log('initialLookId', initialLookId)
-    if (initialLookId && !initialQuerySlug) {
-      fetchInitialQueryFromLook()
-    }
-  }, [initialLookId])
-
-  // uncomment to watch the filterConfig 
-  // useEffect(() => {
-  //   console.log('filterConfig:', filterConfig)
-  // }, [filterConfig])
-  // uncomment to watch the filterValues
-  useEffect(() => {
-    console.log('filterValues:', filterValues)
-  }, [filterValues])
-  // uncomment to watch client_id
-  useEffect(() => {
-    console.log('client_id:', client_id)
-  })
-  // uncomment to watch host
-  // useEffect(() => {
-  // console.log('host:', host)
-  // })
+    if (initialQuery && filterValues && host) createFinalQuery()
+  }, [filterValues]);
 
   // If the elementId is not an integer, the tile is not saved and the user is in edit mode
   const isSaved = Number.isInteger(Number(elementId))
+
+  const embedVisualizationProps = useMemo(() => ({
+    host,
+    lookId: initialLookId,
+    query: client_id
+  }), [host, initialLookId, client_id]);
 
   return (
     <>
@@ -293,6 +248,7 @@ export const TileWithFilters = () => {
                     <li>Add the tile to this Dashboard.</li>
                     <li>Also save the tile as a Look.</li>
                     <li>Note the Look Id.</li>
+                    <li>Remove any dynamic filters from the Look.</li>
                   </ol>
                 </li>
                 <li>Configure the extension tile with filters
@@ -335,8 +291,8 @@ export const TileWithFilters = () => {
               />
             </FiltersContainer>
           )}
-          {client_id && host && (
-            <EmbedVisualization host={host} lookId={initialLookId} query={client_id} />
+          {client_id && host && initialLookId && (
+            <EmbedVisualization {...embedVisualizationProps} />
           )}
 
         </TileFrame>

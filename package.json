@@ -21,7 +21,6 @@
     "@looker/filter-components": "^1.2.2",
     "@looker/filter-expressions": "1.0.4",
     "css-loader": "^7.1.2",
-    "lodash": "^4.17.21",
     "react": "^16.14.0",
     "react-dom": "^16.14.0",
     "react-is": "^16.13.1",

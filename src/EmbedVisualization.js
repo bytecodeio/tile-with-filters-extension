@@ -38,5 +38,5 @@ EmbedVisualization.propTypes = {
     query: PropTypes.string.isRequired
 };
 
-// export default React.memo(EmbedVisualization);
-export default EmbedVisualization;
+export default React.memo(EmbedVisualization);
+// export default EmbedVisualization;
