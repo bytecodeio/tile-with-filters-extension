@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useRef, useContext, useCallback, useMemo } from "react";
 import {
   ComponentsProvider,
   FieldText,
@@ -133,6 +133,7 @@ export const TileWithFilters = () => {
 
     const newFilterElementId = tileHostData.elementId + ':filterConfig'
     const newLookElementId = tileHostData.elementId + ':lookId';
+    const newHostElementId = tileHostData.elementId + ':host';
 
     // Save the new context data, starting with the previous state
     let revisedContextData = { ...contextData }
@@ -141,9 +142,38 @@ export const TileWithFilters = () => {
       revisedContextData[newFilterElementId] = JSON.parse(JSON.stringify(filterConfig))
     }
     revisedContextData[newLookElementId] = initialLookId
-
+    if (host) {
+      console.log('setting host in context', host)
+      revisedContextData[newHostElementId] = host
+    }
     extensionSDK.saveContextData(revisedContextData)
   }
+
+
+  // This function takes the state and persists the first render's client id to context
+  const persistClientIdToContext = async () => {
+    if (!elementId) {
+      console.error('No elementId found in tileHostData, skipping persistStateToContext')
+      return
+    }
+
+    const contextData = extensionSDK.getContextData()
+
+    const newClientId = tileHostData.elementId + ':clientId'
+
+    // Save the new context data, starting with the previous state
+    let revisedContextData = { ...contextData }
+
+    if (client_id) {
+      revisedContextData[newClientId] = client_id
+    }
+
+    console.log('persisting client_id to context', revisedContextData)
+    extensionSDK.saveContextData(revisedContextData)
+  }
+
+  // This hook is used to prevent the client_id from being persisted to context on every render
+  const hasPersistedClientId = useRef(false);
 
   // This function takes the context and populates the initial query slug and filter config
   const populateStateFromContext = async () => {
@@ -158,6 +188,8 @@ export const TileWithFilters = () => {
 
     const newFilterConfigElementId = elementId + ':filterConfig';
     const newLookID = elementId + ':lookId';
+    const newClientId = elementId + ':clientId';
+    const newHostElementId = elementId + ':host';
 
     if (!contextData) {
       // initialize with emtpy context data
@@ -166,10 +198,22 @@ export const TileWithFilters = () => {
       return
     }
 
+    // Check and set client_id if not already assigned
+    if (contextData && contextData && contextData[newClientId]) {
+      console.log('Setting client_id from contextData', contextData[newClientId]);
+      setClient_id(contextData[newClientId]);
+    }
+
     // Check and set initialLookId if not already assigned
     if (!initialLookId && contextData && contextData[newLookID]) {
       setInitialLookId(contextData[newLookID]);
       // console.log('Setting initial look id from contextData', contextData[newLookID]);
+    }
+
+    // Check and set host if not already assigned
+    if (!host && contextData && contextData[newHostElementId]) {
+      setHost(contextData[newHostElementId]);
+      console.log('Setting host from contextData', contextData[newHostElementId]);
     }
 
     // Check and set filterConfig if not already assigned
@@ -213,8 +257,14 @@ export const TileWithFilters = () => {
   // This Hook will persist the react state into context when necessary
   useEffect(() => {
     if (initialLookId || filterConfig) persistStateToContext()
-  }, [initialLookId, filterConfig, tileHostData.elementId])
+  }, [initialLookId, filterConfig, tileHostData.elementId, host])
 
+  useEffect(() => {
+    if (client_id && !hasPersistedClientId.current) {
+      persistClientIdToContext();
+      hasPersistedClientId.current = true;
+    }
+  }, [client_id]);
   // This hook with create a final query when filter value or the initial query change
   useEffect(() => {
     if (initialQuery && filterValues && host) createFinalQuery()
