@@ -71,6 +71,7 @@ export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, fil
 			console.log('previous Filters:', prevFilterValues);
 			console.log('Setting filter value:', viewFieldId, value);
 			newFilterValues[viewFieldId] = value;
+			setFilterValues(newFilterValues);
 			console.log('new Filters:', newFilterValues);
 			return newFilterValues;
 		  });
