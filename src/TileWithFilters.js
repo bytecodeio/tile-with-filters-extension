@@ -293,7 +293,8 @@ export const TileWithFilters = () => {
         <TransitionContainer isEmbedVisible={isEmbedVisible}>
           <LoadingIcon isLoading={isLoading}>Loading...</LoadingIcon>
           {client_id && initialLookId && (
-              <EmbedVisualization isEmbedVisible={true} {...embedVisualizationProps} />
+              <EmbedVisualization isEmbedVisible={true} {...embedVisualizationProps}               model={model}
+              explore={explore} />
           )}
         </TransitionContainer>
       </TileFrame>

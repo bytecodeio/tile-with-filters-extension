@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { ExtensionContext } from '@looker/extension-sdk-react';
 
 const EmbedVisualizationContainer = styled.div`
+    margin-top: -44px;
     visibility: ${(props) => (props.isEmbedVisible ? 'visible' : 'hidden')};
     opacity: ${(props) => (props.isEmbedVisible ? 1 : 0)};
     transition: opacity 1s ease-in-out;
@@ -16,18 +17,36 @@ const EmbedVisualizationContainer = styled.div`
         height: calc(100vh - 72px);
     }
 `;
-// margin-top: -44px;
 
-const EmbedVisualization = ({ host, lookId, query, isEmbedVisible }) => {
+
+const EmbedVisualization = ({
+    model,
+    explore,
+    host,
+    lookId,
+    query,
+    filters,
+}) => {
     const [look, setLook] = useState();
     const extensionContext = useContext(ExtensionContext);
+    const [running, setRunning] = useState(true);
 
-    const handleSubmit =  async (e) => {
-        await look.updateFilters({
-            field: 'history.source',
-            value: 'api4',
-        });
-        look.run()
+    useEffect(() => {
+        if (!running) {
+            setTimeout(() => {
+                handleSubmit();
+            }, 5000);
+        }
+    }, [running]);
+
+    const handleSubmit = async (e) => {
+      look.updateFilters({
+        'history.source': 'api4'
+      });
+      setTimeout(() => {
+        look.run();
+    }, 2000);
+        
     };
 
     const embedCtrRef = useCallback(
@@ -37,6 +56,10 @@ const EmbedVisualization = ({ host, lookId, query, isEmbedVisible }) => {
             if (el && hostUrl && lookId && host && extensionContext) {
                 el.innerHTML = ''; // Clear the container
                 LookerEmbedSDK.init(hostUrl);
+
+                // const r = LookerEmbedSDK.createExploreWithUrl('')
+                // console.log(r)
+                // r.withUrl(`/embed/query/${model}/${explore}`)
                 LookerEmbedSDK.createLookWithId(lookId)
                     .appendTo(el)
                     .withParams({ qid: query })
@@ -46,6 +69,7 @@ const EmbedVisualization = ({ host, lookId, query, isEmbedVisible }) => {
                     .on('look:ready', console.log)
                     .on('look:run:start', console.log)
                     .on('look:run:complete', (e) => {
+                        setRunning(false);
                         console.log(e);
                     })
                     .build()
@@ -56,14 +80,14 @@ const EmbedVisualization = ({ host, lookId, query, isEmbedVisible }) => {
                     });
             }
         },
-        [lookId, query]
+        [lookId]
     );
 
     return (
         <>
             <EmbedVisualizationContainer
                 ref={embedCtrRef}
-                isEmbedVisible={isEmbedVisible}
+                isEmbedVisible={!running}
             ></EmbedVisualizationContainer>
         </>
     );
