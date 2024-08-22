@@ -24,8 +24,22 @@ const FiltersContainer = styled.div`
   width: 100%;
   padding-bottom: 7px;
   background-color: white;
-  z-index: 1;
+  z-index: 2;
   position: relative;
+`;
+
+const TransitionContainer = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  div {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: opacity 1s ease-in-out;
+  }
 `;
 
 export const TileWithFilters = () => {
@@ -40,7 +54,6 @@ export const TileWithFilters = () => {
   } = useContext(ExtensionContext);
 
   const [initialLookId, setInitialLookId] = useState();
-  const [host, setHost] = useState();
   const [initialQuery, setInitialQuery] = useState();
   const [client_id, setClient_id] = useState();
   const [filterConfig, setFilterConfig] = useState();
@@ -48,9 +61,10 @@ export const TileWithFilters = () => {
   const [model, setModel] = useState();
   const [explore, setExplore] = useState();
   const [showInstructions, setShowInstructions] = useState(false);
+  const [isEmbedVisible, setIsEmbedVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const { dashboardFilters, elementId, isDashboardEditing, dashboardId } = tileHostData;
-
   const toggleInstructions = useCallback(() => {
     setShowInstructions(prev => !prev);
   }, []);
@@ -68,9 +82,11 @@ export const TileWithFilters = () => {
     !model && query?.model && setModel(query.model);
     !explore && query?.view && setExplore(query.view);
 
-    if (!filters || filters.length === 0) {
-      setClient_id(query.client_id);
+    if (!filters || Object.keys(filters).length === 0) {
+      console.log('No filters to apply, using initial query');
+      query && setClient_id(query.client_id);
     } else {
+      console.log('Applying filters to query');
       const { client_id, id, can, slug, expanded_share_url, ...strippedQuery } = query;
       const newQueryData = {
         ...strippedQuery,
@@ -80,7 +96,7 @@ export const TileWithFilters = () => {
       };
       const newQuery = await core40SDK.ok(core40SDK.create_query(newQueryData));
       console.log('newQuery', newQuery);
-      setClient_id(newQuery.client_id);
+      newQuery && setClient_id(newQuery.client_id);
     }
   }, [filterValues, model, explore, initialQuery]);
 
@@ -93,7 +109,6 @@ export const TileWithFilters = () => {
     const contextData = extensionSDK.getContextData();
     const newFilterElementId = tileHostData.elementId + ':filterConfig';
     const newLookElementId = tileHostData.elementId + ':lookId';
-    const newHostElementId = tileHostData.elementId + ':host';
     const initialQueryElementId = tileHostData.elementId + ':initialQuery';
 
     let revisedContextData = { ...contextData };
@@ -102,16 +117,14 @@ export const TileWithFilters = () => {
       revisedContextData[newFilterElementId] = JSON.parse(JSON.stringify(filterConfig));
     }
     revisedContextData[newLookElementId] = initialLookId;
-    if (host) { revisedContextData[newHostElementId] = host;}
-    
-    const unfilteredQueryResponse = await core40SDK.ok(core40SDK.look(
-      initialLookId, 'query,image_embed_url'))
-      console.log('unfilteredQueryResponse', unfilteredQueryResponse);
-    const unfilteredQuery = unfilteredQueryResponse?.query
-    if (unfilteredQuery) revisedContextData[initialQueryElementId] = unfilteredQuery;
 
+    const unfilteredQueryResponse = await core40SDK.ok(core40SDK.look(
+      initialLookId, 'query'))
+    const unfilteredQuery = unfilteredQueryResponse?.query
+    revisedContextData[initialQueryElementId] = unfilteredQuery;
+    console.log('persisting context data', revisedContextData);
     extensionSDK.saveContextData(revisedContextData);
-  }, [elementId, filterConfig, host, initialLookId, tileHostData.elementId, extensionSDK]);
+  }, [elementId, filterConfig, initialLookId, tileHostData.elementId, extensionSDK]);
 
   const persistClientIdToContext = useCallback(async () => {
     if (!elementId) {
@@ -140,31 +153,30 @@ export const TileWithFilters = () => {
       return;
     }
     const contextData = await extensionSDK.getContextData();
+    console.log('populating state from context', contextData);
     const newFilterConfigElementId = elementId + ':filterConfig';
     const newLookID = elementId + ':lookId';
     const newClientId = elementId + ':clientId';
-    const newHostElementId = elementId + ':host';
-    const initialQueryElementId = elementId + ':initialQuery';  
+    const initialQueryElementId = elementId + ':initialQuery';
 
     if (!contextData) {
       extensionSDK.saveContextData({});
       console.error('No context data found in populateStateFromContext');
       return;
     }
-    if (contextData[newClientId]) {
-      setInitialLookStateSimultaneously(contextData[newLookID], contextData[newClientId], contextData[newHostElementId], contextData[initialQueryElementId]);
-    }
+    console.log('setting client_id from context', contextData[newClientId]);
+    setInitialLookStateSimultaneously(contextData[newLookID], contextData[newClientId], contextData[initialQueryElementId]);
 
     if (contextData[newFilterConfigElementId] && contextData[newFilterConfigElementId].length > 0) {
       setFilterConfig(contextData[newFilterConfigElementId]);
     }
-    setInitialQuery(visualizationData.query);
+
+    visualizationData && setInitialQuery(visualizationData.query);
   }, [extensionSDK, tileHostData.elementId]);
 
-  const setInitialLookStateSimultaneously = useCallback((lookId, client_id, host, query) => {
+  const setInitialLookStateSimultaneously = useCallback((lookId, client_id, query) => {
     setClient_id(client_id);
     setInitialLookId(lookId);
-    setHost(host);
     setInitialQuery(query);
   }, []);
 
@@ -173,8 +185,18 @@ export const TileWithFilters = () => {
   }, [tileHostData.elementId, populateStateFromContext]);
 
   useEffect(() => {
+    if (client_id && initialLookId) {
+      const timer = setTimeout(() => {
+        setIsEmbedVisible(true);
+        setIsLoading(false);
+      }, 7000); // 7 seconds delay
+      return () => clearTimeout(timer);
+    }
+  }, [client_id, initialLookId]);
+
+  useEffect(() => {
     if (initialLookId || filterConfig) persistStateToContext();
-  }, [initialLookId, filterConfig, tileHostData.elementId, host, persistStateToContext]);
+  }, [initialLookId, filterConfig, tileHostData.elementId, persistStateToContext]);
 
   useEffect(() => {
     if (client_id && !hasPersistedClientId.current) {
@@ -188,13 +210,30 @@ export const TileWithFilters = () => {
     createFinalQuery();
   }, [filterValues, createFinalQuery]);
 
+  const EmbedVisualizationContainer = styled.div`
+    visibility: ${props => (props.isEmbedVisible ? 'visible' : 'hidden')};
+    opacity: ${props => (props.isEmbedVisible ? 1 : 0)};
+    transition: opacity 1s ease-in-out;
+    z-index: ${props => (props.isEmbedVisible ? 1 : -1)};
+  `;
+
+  const LoadingIcon = styled.div`
+    display: ${props => (props.isLoading ? 'block' : 'none')};
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: #000;
+  `;
+
   const isSaved = Number.isInteger(Number(elementId));
 
   const embedVisualizationProps = useMemo(() => ({
-    host,
+    host: lookerHostData.hostOrigin.replace('https://', ''),
     lookId: initialLookId,
     query: client_id
-  }), [host, initialLookId, client_id]);
+  }), [initialLookId, client_id]);
 
   return (
     <ComponentsProvider>
@@ -257,10 +296,17 @@ export const TileWithFilters = () => {
             />
           </FiltersContainer>
         )}
-        {client_id && host && initialLookId && (
-          <EmbedVisualization {...embedVisualizationProps} />
-        )}
+        <TransitionContainer isEmbedVisible={isEmbedVisible}>
+          <LoadingIcon isLoading={isLoading}>Loading...</LoadingIcon>
+          {client_id && initialLookId && (
+            <EmbedVisualizationContainer isEmbedVisible={isEmbedVisible}>
+              <EmbedVisualization {...embedVisualizationProps} />
+            </EmbedVisualizationContainer>
+          )}
+        </TransitionContainer>
       </TileFrame>
     </ComponentsProvider>
   );
 };
+
+export default TileWithFilters;

@@ -1376,7 +1376,7 @@
     polished "3.7.2"
     use-debounce "5.2.1"
 
-"@looker/filter-expressions@1.0.4", "@looker/filter-expressions@^1.0.4":
+"@looker/filter-expressions@^1.0.4":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@looker/filter-expressions/-/filter-expressions-1.0.4.tgz#554f36fde0058834da641247e6e817d28a94082e"
   integrity sha512-kH3hR24nKc+ntzRBjeQLGfLMEKa27CJMVZCM8mdE391ZsFH+CFdbm2OM41PQyJmimbhxNQF8oSS9QkvjJjZlWw==

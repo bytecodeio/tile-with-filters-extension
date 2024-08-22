@@ -9,10 +9,8 @@ const FilterFlexHolder = styled.div`
 display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
-
-max-width: 634px;
-height: auto;
-
+  max-width: 634px;
+  height: auto;
 `
 
 
@@ -66,16 +64,20 @@ export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, fil
 	const getFieldFilterChangeHandler = (filter) => (value) => {
 		// The view and field are separated by a period. The field may come from a dimension or a measure
 		const viewFieldId = filter.dimension ? `${filter.dimension}` : `${filter.measure}`;
+		const allCategories = filter.nameForAllCategories;
 		setFilterValues((prevFilterValues) => {
-			const newFilterValues = { ...prevFilterValues };
+			let newFilterValues = { ...prevFilterValues };
+
+
 			console.log('previous Filters:', prevFilterValues);
 			console.log('Setting filter value:', viewFieldId, value);
+
 			newFilterValues[viewFieldId] = value;
 			setFilterValues(newFilterValues);
 			console.log('new Filters:', newFilterValues);
 			return newFilterValues;
-		  });
-	  }
+		});
+	}
 
 	return (
 		<div>
@@ -89,34 +91,41 @@ export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, fil
 						options={configuredDashboardFilters && configuredDashboardFilters.map(field => ({ value: field.id, label: field.title }))}
 						placeholder="Select Filter Field"
 					/>
-				{console.log('configuredDashboardFilters and selected field', configuredDashboardFilters, selectedField)}
-				{console.log(configuredDashboardFilters.find(filter => Number(filter.id) == Number(selectedField)))}
-					{configuredDashboardFilters.find(filter => Number(filter.id) === Number(selectedField))?.ui_config?.type === 'checkboxes' && (
-						<FieldText
-							label="Name for All Categories. Leave blank if you don't want an 'All' category."
-							value={nameForAllCategories}
-							onChange={e => setNameForAllCategories(e.target.value)}
-						/>
-					)}
+					{(configuredDashboardFilters.find(filter => Number(filter.id) === Number(selectedField))?.ui_config?.type === 'checkboxes' ||
+						configuredDashboardFilters.find(filter => Number(filter.id) === Number(selectedField))?.ui_config?.type === 'tag_list') && (
+							<FieldText
+								label="Name for All Categories. Leave blank if you don't want an 'All' category."
+								value={nameForAllCategories}
+								onChange={e => setNameForAllCategories(e.target.value)}
+							/>
+						)}
 					<Button onClick={handleAddFilter}>Add Filter</Button>
 				</SpaceVertical>)
 			}
 			{filterConfig && (
 				<FilterFlexHolder>
-					{filterConfig.map((filter, index) => (
-					<PopoverFilter
-						key={index}
-						index={index}
-						filter={filter}
-						sdk={core40SDK}
-						changeHandler={getFieldFilterChangeHandler(filter)}
-						expression={filter.name ? filterValues[filter?.name] : ''}
-						nameForAllCategories={filter.nameForAllCategories || ''}
-					/>
-					))}
+					{filterConfig.map((filter, index) => {
+						const filterKey = filter.dimension ? `${filter.dimension}` : `${filter.measure}`;
+
+						// Find the corresponding value in filterValues
+						const filterValue = filterValues[filterKey];
+
+						return (
+							<PopoverFilter
+								key={index}
+								index={index}
+								filter={filter}
+								sdk={core40SDK}
+								changeHandler={getFieldFilterChangeHandler(filter)}
+								expression={filterValue}
+								nameForAllCategories={filter.nameForAllCategories || ''}
+							// filterValue={{filterKey: filterValue}}
+							/>
+						)
+					})}
 				</FilterFlexHolder>
 			)
-		}
+			}
 
 		</div>
 	);
