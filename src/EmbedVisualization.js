@@ -61,7 +61,6 @@ const EmbedVisualization = ({ host, lookId, query, isEmbedVisible }) => {
 
     return (
         <>
-            <button id="TestClick" onClick={handleSubmit}>test</button>
             <EmbedVisualizationContainer
                 ref={embedCtrRef}
                 isEmbedVisible={isEmbedVisible}
