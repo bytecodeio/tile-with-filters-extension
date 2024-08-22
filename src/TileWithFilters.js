@@ -210,12 +210,6 @@ export const TileWithFilters = () => {
     createFinalQuery();
   }, [filterValues, createFinalQuery]);
 
-  const EmbedVisualizationContainer = styled.div`
-    visibility: ${props => (props.isEmbedVisible ? 'visible' : 'hidden')};
-    opacity: ${props => (props.isEmbedVisible ? 1 : 0)};
-    transition: opacity 1s ease-in-out;
-    z-index: ${props => (props.isEmbedVisible ? 1 : -1)};
-  `;
 
   const LoadingIcon = styled.div`
     display: ${props => (props.isLoading ? 'block' : 'none')};
@@ -299,9 +293,7 @@ export const TileWithFilters = () => {
         <TransitionContainer isEmbedVisible={isEmbedVisible}>
           <LoadingIcon isLoading={isLoading}>Loading...</LoadingIcon>
           {client_id && initialLookId && (
-            <EmbedVisualizationContainer isEmbedVisible={isEmbedVisible}>
-              <EmbedVisualization {...embedVisualizationProps} />
-            </EmbedVisualizationContainer>
+              <EmbedVisualization isEmbedVisible={true} {...embedVisualizationProps} />
           )}
         </TransitionContainer>
       </TileFrame>
