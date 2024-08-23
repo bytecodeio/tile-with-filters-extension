@@ -17,13 +17,13 @@
   },
   "dependencies": {
     "@looker/components": "^5.0.3",
+    "@looker/embed-sdk": "^1.8.6",
     "@looker/extension-sdk-react": "^24.12.1",
     "@looker/filter-components": "^1.2.2",
     "react": "^16.14.0",
     "react-dom": "^16.14.0",
     "react-is": "^16.13.1",
     "react-router-dom": "^5.3.0",
-    
     "styled-components": "^5.3.3"
   },
   "devDependencies": {

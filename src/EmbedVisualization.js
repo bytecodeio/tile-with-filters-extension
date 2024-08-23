@@ -1,67 +1,103 @@
-import React, {useEffect}  from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import { LookerEmbedLook, LookerEmbedSDK } from '@looker/embed-sdk';
+import styled from 'styled-components';
+import { ExtensionContext } from '@looker/extension-sdk-react';
 
-const EmbedVisualization = ({ host, lookId, query }) => {
+const EmbedVisualizationContainer = styled.div`
+    margin-top: -44px;
+    visibility: ${(props) => (props.isEmbedVisible ? 'visible' : 'hidden')};
+    opacity: ${(props) => (props.isEmbedVisible ? 1 : 0)};
+    transition: opacity 1s ease-in-out;
+    z-index: ${(props) => (props.isEmbedVisible ? 1 : -1)};
+    & > iframe {
+        background-color: #ffffff !important;
+        border: none;
+        width: 100%;
+        height: calc(100vh - 72px);
+    }
+`;
 
-    // console.log('EmbedVisualization');
-    // console.log('host', host);
-    // console.log('lookId', lookId);
-    // console.log('query', query);
-    // final should look like this: https://bytecodeef.looker.com/embed/looks/251?qid=YSIsPiflZb0ZkcwP6b15Cm
- 
-    // const embed_domain = encodeURIComponent('https://08a3f26b-1284-4ec8-8090-50d0bb378159-extensions.cloud.looker.com');
-    // let newUrl = `https://${host}/embed/looks/${lookId}?qid=${query}&sdk=2&embed_domain=${embed_domain}`;
-    // console.log('newUrl', newUrl);
 
-    let newUrl = `https://${host}/embed/looks/${lookId}?qid=${query}`;
-
+const EmbedVisualization = ({
+    model,
+    explore,
+    host,
+    lookId,
+    query,
+    filters,
+}) => {
+    const [look, setLook] = useState();
+    const extensionContext = useContext(ExtensionContext);
+    const [running, setRunning] = useState(true);
 
     useEffect(() => {
-        const handleIframeMessage = (event) => {
-            // Ensure the message is coming from the expected origin
-            if (event.origin !== `https://${host}`) {
-                return;
+        if (!running) {
+            setTimeout(() => {
+                handleSubmit();
+            }, 5000);
+        }
+    }, [running]);
+
+    const handleSubmit = async (e) => {
+      look.updateFilters({
+        'history.source': 'api4'
+      });
+      setTimeout(() => {
+        look.run();
+    }, 2000);
+        
+    };
+
+    const embedCtrRef = useCallback(
+        (el) => {
+            const hostUrl =
+                extensionContext?.extensionSDK?.lookerHostData?.hostUrl;
+            if (el && hostUrl && lookId && host && extensionContext) {
+                el.innerHTML = ''; // Clear the container
+                LookerEmbedSDK.init(hostUrl);
+
+                // const r = LookerEmbedSDK.createExploreWithUrl('')
+                // console.log(r)
+                // r.withUrl(`/embed/query/${model}/${explore}`)
+                LookerEmbedSDK.createLookWithId(lookId)
+                    .appendTo(el)
+                    .withParams({ qid: query })
+                    .withAllowAttr('fullscreen')
+                    .on('page:changed', console.log)
+                    .on('page:properties:changed', console.log)
+                    .on('look:ready', console.log)
+                    .on('look:run:start', console.log)
+                    .on('look:run:complete', (e) => {
+                        setRunning(false);
+                        console.log(e);
+                    })
+                    .build()
+                    .connect()
+                    .then((look) => setLook(look))
+                    .catch((error) => {
+                        console.error('Connection error', error);
+                    });
             }
-
-            // Handle the message
-            // console.log('Message from iframe:', event.data);
-            // Add your custom logic here
-        };
-
-        // Add event listener for messages from the iframe
-        window.addEventListener('message', handleIframeMessage);
-
-        // Cleanup event listener on component unmount
-        return () => {
-            window.removeEventListener('message', handleIframeMessage);
-        };
-    }, [host]);
+        },
+        [lookId]
+    );
 
     return (
-        <iframe
-            id='embedLook'
-            src={newUrl}
-            width="100%"
-            height="100%"
-            frameBorder="0"
-            allowFullScreen
-            title="Looker Visualization"
-            style={{
-                marginTop: '-44px',
-                backgroundColor: '#ffffff !important', // Ensure the iframe background is transparent
-                border: 'none', // Remove any default border
-                width: '100%', // Ensure the iframe takes full width
-                height: 'calc(100vh - 72px)' // Ensure the iframe takes full height
-            }}
-        ></iframe>
-    )
-
+        <>
+            <EmbedVisualizationContainer
+                ref={embedCtrRef}
+                isEmbedVisible={!running}
+            ></EmbedVisualizationContainer>
+        </>
+    );
 };
 
 EmbedVisualization.propTypes = {
     host: PropTypes.string.isRequired,
     lookId: PropTypes.number.isRequired,
-    query: PropTypes.string.isRequired
+    query: PropTypes.string.isRequired,
+    isEmbedVisible: PropTypes.bool.isRequired,
 };
 
 export default React.memo(EmbedVisualization);
