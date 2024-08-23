@@ -61,8 +61,6 @@ export const TileWithFilters = () => {
   const [model, setModel] = useState();
   const [explore, setExplore] = useState();
   const [showInstructions, setShowInstructions] = useState(false);
-  const [isEmbedVisible, setIsEmbedVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   const { dashboardFilters, elementId, isDashboardEditing, dashboardId } = tileHostData;
   const toggleInstructions = useCallback(() => {
@@ -185,16 +183,6 @@ export const TileWithFilters = () => {
   }, [tileHostData.elementId, populateStateFromContext]);
 
   useEffect(() => {
-    if (client_id && initialLookId) {
-      const timer = setTimeout(() => {
-        setIsEmbedVisible(true);
-        setIsLoading(false);
-      }, 7000); // 7 seconds delay
-      return () => clearTimeout(timer);
-    }
-  }, [client_id, initialLookId]);
-
-  useEffect(() => {
     if (initialLookId || filterConfig) persistStateToContext();
   }, [initialLookId, filterConfig, tileHostData.elementId, persistStateToContext]);
 
@@ -210,22 +198,10 @@ export const TileWithFilters = () => {
     createFinalQuery();
   }, [filterValues, createFinalQuery]);
 
-
-  const LoadingIcon = styled.div`
-    display: ${props => (props.isLoading ? 'block' : 'none')};
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 24px;
-    color: #000;
-  `;
-
   const isSaved = Number.isInteger(Number(elementId));
 
   const embedVisualizationProps = useMemo(() => ({
     host: lookerHostData.hostOrigin.replace('https://', ''),
-    lookId: initialLookId,
     query: client_id
   }), [initialLookId, client_id]);
 
@@ -290,13 +266,11 @@ export const TileWithFilters = () => {
             />
           </FiltersContainer>
         )}
-        <TransitionContainer isEmbedVisible={isEmbedVisible}>
-          <LoadingIcon isLoading={isLoading}>Loading...</LoadingIcon>
-          {client_id && initialLookId && (
-              <EmbedVisualization isEmbedVisible={true} {...embedVisualizationProps}               model={model}
+          {client_id && model && explore && (
+              <EmbedVisualization {...embedVisualizationProps}               model={model}
               explore={explore} />
+              // <iframe src={`${lookerHostData.hostUrl}/embed/query/${model}/${explore}?qid=${client_id}`} width="100%" height="100%"></iframe>
           )}
-        </TransitionContainer>
       </TileFrame>
     </ComponentsProvider>
   );
