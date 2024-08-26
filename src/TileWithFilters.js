@@ -10,7 +10,7 @@ const TileFrame = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 20px;
+  
   gap: 9px;
   width: auto;
   height: auto;
@@ -23,6 +23,7 @@ const TileFrame = styled.div`
 const FiltersContainer = styled.div`
   width: 100%;
   padding-bottom: 7px;
+  padding-left: 20px;
   background-color: white;
   z-index: 2;
   position: relative;
@@ -77,9 +78,6 @@ export const TileWithFilters = () => {
     const filters = filterValuesOverride || filterValues;
 
     console.log('Creating final query with filters', filters);
-    !model && query?.model && setModel(query.model);
-    !explore && query?.view && setExplore(query.view);
-
     if (!filters || Object.keys(filters).length === 0) {
       console.log('No filters to apply, using initial query');
       query && setClient_id(query.client_id);
@@ -93,7 +91,6 @@ export const TileWithFilters = () => {
         },
       };
       const newQuery = await core40SDK.ok(core40SDK.create_query(newQueryData));
-      console.log('newQuery', newQuery);
       newQuery && setClient_id(newQuery.client_id);
     }
   }, [filterValues, model, explore, initialQuery]);
@@ -163,7 +160,7 @@ export const TileWithFilters = () => {
       return;
     }
     console.log('setting client_id from context', contextData[newClientId]);
-    setInitialLookStateSimultaneously(contextData[newLookID], contextData[newClientId], contextData[initialQueryElementId]);
+    setInitialLookStateSimultaneously(contextData[newLookID], contextData[newClientId], contextData[initialQueryElementId], );
 
     if (contextData[newFilterConfigElementId] && contextData[newFilterConfigElementId].length > 0) {
       setFilterConfig(contextData[newFilterConfigElementId]);
@@ -176,6 +173,8 @@ export const TileWithFilters = () => {
     setClient_id(client_id);
     setInitialLookId(lookId);
     setInitialQuery(query);
+    setModel(query.model);
+    setExplore(query.view);
   }, []);
 
   useEffect(() => {

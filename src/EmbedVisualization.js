@@ -6,14 +6,13 @@ import { ExtensionContext } from '@looker/extension-sdk-react';
 
 const EmbedVisualizationContainer = styled.div`
     margin-top: -44px;
-    margin-left: -16px
     transition: opacity 1s ease-in-out;
     z-index: 1;
     & > iframe {
         background-color: #ffffff !important;
         border: none;
-        width: calc(100vw );
-        height: calc(100vh - 72px);
+        width: calc(100vw);
+        height: calc(100vh );
     }
 `;
 
@@ -27,9 +26,10 @@ const EmbedVisualization = ({
     const extensionContext = useContext(ExtensionContext);
 
     useEffect(() => {
+        console.log('embed mounted:', embed);
         if (embed) {
             setTimeout(() => {
-                handleSubmit();
+                // handleSubmit();
             }, 10000);
         }
     }, [embed]);
