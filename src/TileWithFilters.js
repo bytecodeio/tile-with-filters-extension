@@ -25,8 +25,8 @@ const FiltersContainer = styled.div`
   padding-bottom: 7px;
   padding-left: 20px;
   background-color: white;
-  z-index: 2;
   position: relative;
+  ${({ isDashboardEditing }) => !isDashboardEditing && 'z-index: 2;'}
 `;
 
 const TransitionContainer = styled.div`
@@ -252,7 +252,7 @@ export const TileWithFilters = () => {
           </SpaceVertical>
         )}
         {isSaved && (
-          <FiltersContainer>
+          <FiltersContainer isDashboardEditing={isDashboardEditing}>
             <Filters
               isDashboardEditing={isDashboardEditing}
               filterConfig={filterConfig}
@@ -265,7 +265,7 @@ export const TileWithFilters = () => {
             />
           </FiltersContainer>
         )}
-          {client_id && model && explore && (
+          {client_id && model && explore && !isDashboardEditing && (
               <EmbedVisualization {...embedVisualizationProps}               model={model}
               explore={explore} />
               // <iframe src={`${lookerHostData.hostUrl}/embed/query/${model}/${explore}?qid=${client_id}`} width="100%" height="100%"></iframe>
