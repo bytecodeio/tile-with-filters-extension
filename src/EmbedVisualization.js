@@ -9,7 +9,7 @@ import { ExtensionContext } from '@looker/extension-sdk-react';
 const EmbedVisualizationContainer = styled.div`
     margin-top: -44px;
     transition: opacity 1s ease-in-out;
-    z-index: 1;
+    z-index: -1;
     & > iframe {
         background-color: #ffffff !important;
         border: none;

@@ -28,3 +28,6 @@ div[role="group"] {
   margin: 0.5rem;
 }
 
+.looker-components-reset {
+  background: none !important; /* Override the background color */
+}

@@ -5,6 +5,7 @@ import { ExtensionContext } from '@looker/extension-sdk-react';
 import Filters from './Filters';
 import EmbedVisualization from './EmbedVisualization';
 
+
 const TileFrame = styled.div`
   box-sizing: border-box;
   display: flex;
@@ -14,7 +15,6 @@ const TileFrame = styled.div`
   gap: 9px;
   width: auto;
   height: auto;
-  background: #FFFFFF;
   flex: none;
   order: 1;
   flex-grow: 1;
@@ -26,21 +26,7 @@ const FiltersContainer = styled.div`
   padding-left: 20px;
   background-color: white;
   position: relative;
-  ${({ isDashboardEditing }) => !isDashboardEditing && 'z-index: 2;'}
-`;
-
-const TransitionContainer = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  div {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    transition: opacity 1s ease-in-out;
-  }
+  
 `;
 
 export const TileWithFilters = () => {
