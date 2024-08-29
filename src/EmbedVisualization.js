@@ -4,6 +4,8 @@ import { LookerEmbedLook, LookerEmbedSDK } from '@looker/embed-sdk';
 import styled from 'styled-components';
 import { ExtensionContext } from '@looker/extension-sdk-react';
 
+// TODO: this should inherit the height of the filter elements, so that we can reduce height subtracted from the viewport height.
+// for 1 layer of filters, 22px is enough, for 2 layers (3-4 filters), 50px is good.
 const EmbedVisualizationContainer = styled.div`
     margin-top: -44px;
     transition: opacity 1s ease-in-out;
@@ -12,7 +14,7 @@ const EmbedVisualizationContainer = styled.div`
         background-color: #ffffff !important;
         border: none;
         width: calc(100vw);
-        height: calc(100vh );
+        height: calc(100vh - 50px);
     }
 `;
 
