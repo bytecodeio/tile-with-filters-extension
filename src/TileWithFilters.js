@@ -155,6 +155,8 @@ export const TileWithFilters = () => {
         setElementId(newElementId);
         properElementId = newElementId;
       }
+    } else {
+      setElementId(tileHostData.elementId);
     }
     const newFilterConfigElementId = properElementId + ':filterConfig';
     const newLookID = properElementId + ':lookId';
