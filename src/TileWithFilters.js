@@ -48,8 +48,8 @@ export const TileWithFilters = () => {
   const [model, setModel] = useState();
   const [explore, setExplore] = useState();
   const [showInstructions, setShowInstructions] = useState(false);
-
-  const { dashboardFilters, elementId, isDashboardEditing, dashboardId } = tileHostData;
+  const [elementId, setElementId] = useState(tileHostData.elementId);
+  const { isDashboardEditing, dashboardId } = tileHostData;
   const toggleInstructions = useCallback(() => {
     setShowInstructions(prev => !prev);
   }, []);
@@ -88,9 +88,9 @@ export const TileWithFilters = () => {
     }
 
     const contextData = extensionSDK.getContextData();
-    const newFilterElementId = tileHostData.elementId + ':filterConfig';
-    const newLookElementId = tileHostData.elementId + ':lookId';
-    const initialQueryElementId = tileHostData.elementId + ':initialQuery';
+    const newFilterElementId = elementId + ':filterConfig';
+    const newLookElementId = elementId + ':lookId';
+    const initialQueryElementId = elementId + ':initialQuery';
 
     let revisedContextData = { ...contextData };
 
@@ -105,16 +105,16 @@ export const TileWithFilters = () => {
     revisedContextData[initialQueryElementId] = unfilteredQuery;
     console.log('persisting context data', revisedContextData);
     extensionSDK.saveContextData(revisedContextData);
-  }, [elementId, filterConfig, initialLookId, tileHostData.elementId, extensionSDK]);
+  }, [elementId, filterConfig, initialLookId, extensionSDK]);
 
   const persistClientIdToContext = useCallback(async () => {
     if (!elementId) {
-      console.error('No elementId found in tileHostData, skipping persistStateToContext');
+      console.error('No elementId found in tileHostData, skipping persistClientIdToContext');
       return;
     }
 
     const contextData = extensionSDK.getContextData();
-    const newClientId = tileHostData.elementId + ':clientId';
+    const newClientId = elementId + ':clientId';
     let revisedContextData = { ...contextData };
 
     if (client_id) {
@@ -123,22 +123,43 @@ export const TileWithFilters = () => {
 
     console.log('persisting client_id to context', revisedContextData);
     extensionSDK.saveContextData(revisedContextData);
-  }, [client_id, elementId, extensionSDK, tileHostData.elementId]);
+  }, [client_id, elementId, extensionSDK]);
 
   const hasPersistedClientId = useRef(false);
 
   const populateStateFromContext = useCallback(async () => {
-    const elementId = tileHostData.elementId;
-    if (!elementId) {
-      console.error('No elementId found in tileHostData, skipping populateStateFromContext');
-      return;
-    }
     const contextData = await extensionSDK.getContextData();
     console.log('populating state from context', contextData);
-    const newFilterConfigElementId = elementId + ':filterConfig';
-    const newLookID = elementId + ':lookId';
-    const newClientId = elementId + ':clientId';
-    const initialQueryElementId = elementId + ':initialQuery';
+    let properElementId = elementId
+    // Check if the extension is loading in a lookml dashboard
+    // The dashboardId will include :: and not be a number if so.
+    if (dashboardId && !Number.isInteger(Number(dashboardId))) {
+      // Check if there is any context data, if not, we are loading in a LookML dashboard
+      const lookIDKey = elementId + ':lookId';
+      if (!contextData[lookIDKey]) {
+        console.log('Loading in a LookML dashboard, loading last UDD context data');
+        // I'd like to find the elementId that is largest stored in context data, with a suffix of :filterConfig
+        // and set the elementId to that value
+        let newElementId = '';
+        let maxElementId = 0;
+        for (const key in contextData) {
+          if (key.includes(':filterConfig')) {
+            const elementId = key.split(':')[0];
+            if (Number(elementId) > maxElementId) {
+              maxElementId = Number(elementId);
+              newElementId = elementId;
+            }
+          }
+        }
+        console.log('Setting elementId to', newElementId);
+        setElementId(newElementId);
+        properElementId = newElementId;
+      }
+    }
+    const newFilterConfigElementId = properElementId + ':filterConfig';
+    const newLookID = properElementId + ':lookId';
+    const newClientId = properElementId + ':clientId';
+    const initialQueryElementId = properElementId + ':initialQuery';
 
     if (!contextData) {
       extensionSDK.saveContextData({});
@@ -146,26 +167,28 @@ export const TileWithFilters = () => {
       return;
     }
     console.log('setting client_id from context', contextData[newClientId]);
-    setInitialLookStateSimultaneously(contextData[newLookID], contextData[newClientId], contextData[initialQueryElementId], );
+    setInitialLookStateSimultaneously(contextData[newLookID], contextData[newClientId], contextData[initialQueryElementId],);
 
     if (contextData[newFilterConfigElementId] && contextData[newFilterConfigElementId].length > 0) {
       setFilterConfig(contextData[newFilterConfigElementId]);
     }
 
     visualizationData && setInitialQuery(visualizationData.query);
-  }, [extensionSDK, tileHostData.elementId]);
+  }, [extensionSDK, elementId, dashboardId]);
 
   const setInitialLookStateSimultaneously = useCallback((lookId, client_id, query) => {
     setClient_id(client_id);
     setInitialLookId(lookId);
-    setInitialQuery(query);
-    setModel(query.model);
-    setExplore(query.view);
+    if (query) {
+      setInitialQuery(query);
+      setModel(query.model);
+      setExplore(query.view);
+    }
   }, []);
 
   useEffect(() => {
-    if (tileHostData.elementId) populateStateFromContext();
-  }, [tileHostData.elementId, populateStateFromContext]);
+    populateStateFromContext();
+  }, [elementId, populateStateFromContext]);
 
   useEffect(() => {
     if (initialLookId || filterConfig) persistStateToContext();
@@ -179,8 +202,10 @@ export const TileWithFilters = () => {
   }, [client_id, persistClientIdToContext]);
 
   useEffect(() => {
-    console.log('going to create final query with filter values;', filterValues);
-    createFinalQuery();
+    if (initialQuery) {
+      console.log('going to create final query with filter values;', filterValues);
+      createFinalQuery();
+    }
   }, [filterValues, createFinalQuery]);
 
   const isSaved = Number.isInteger(Number(elementId));
@@ -251,11 +276,11 @@ export const TileWithFilters = () => {
             />
           </FiltersContainer>
         )}
-          {client_id && model && explore && !isDashboardEditing && (
-              <EmbedVisualization {...embedVisualizationProps}               model={model}
-              explore={explore} />
-              // <iframe src={`${lookerHostData.hostUrl}/embed/query/${model}/${explore}?qid=${client_id}`} width="100%" height="100%"></iframe>
-          )}
+        {client_id && model && explore && !isDashboardEditing && (
+          <EmbedVisualization {...embedVisualizationProps} model={model}
+            explore={explore} />
+          // <iframe src={`${lookerHostData.hostUrl}/embed/query/${model}/${explore}?qid=${client_id}`} width="100%" height="100%"></iframe>
+        )}
       </TileFrame>
     </ComponentsProvider>
   );
