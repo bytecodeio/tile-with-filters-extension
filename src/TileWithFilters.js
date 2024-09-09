@@ -39,7 +39,6 @@ export const TileWithFilters = () => {
     extensionSDK,
     lookerHostData
   } = useContext(ExtensionContext);
-
   const [initialLookId, setInitialLookId] = useState();
   const [initialQuery, setInitialQuery] = useState();
   const [client_id, setClient_id] = useState();
@@ -49,6 +48,7 @@ export const TileWithFilters = () => {
   const [explore, setExplore] = useState();
   const [showInstructions, setShowInstructions] = useState(false);
   const [elementId, setElementId] = useState(tileHostData.elementId);
+  const [isFullScreen, setIsFullScreen] = useState(false); 
   const { isDashboardEditing, dashboardId } = tileHostData;
   const toggleInstructions = useCallback(() => {
     setShowInstructions(prev => !prev);
@@ -88,9 +88,11 @@ export const TileWithFilters = () => {
     }
 
     const contextData = extensionSDK.getContextData();
+    console.log('persisting state to context', contextData);
     const newFilterElementId = elementId + ':filterConfig';
     const newLookElementId = elementId + ':lookId';
     const initialQueryElementId = elementId + ':initialQuery';
+    const tileLayoutElementId = elementId + ':tileLayout';
 
     let revisedContextData = { ...contextData };
 
@@ -103,6 +105,13 @@ export const TileWithFilters = () => {
       initialLookId, 'query'))
     const unfilteredQuery = unfilteredQueryResponse?.query
     revisedContextData[initialQueryElementId] = unfilteredQuery;
+
+    // Get the dashboard and find the tile settings in it
+    const dashboardResponse = await core40SDK.ok(core40SDK.dashboard(dashboardId))
+    const dashboard = dashboardResponse
+    const tileLayout = dashboard?.dashboard_layouts.find(layout => !!layout.active).dashboard_layout_components.find(tile => tile.id === elementId)
+    revisedContextData[tileLayoutElementId] = tileLayout
+
     console.log('persisting context data', revisedContextData);
     extensionSDK.saveContextData(revisedContextData);
   }, [elementId, filterConfig, initialLookId, extensionSDK]);
@@ -162,6 +171,7 @@ export const TileWithFilters = () => {
     const newLookID = properElementId + ':lookId';
     const newClientId = properElementId + ':clientId';
     const initialQueryElementId = properElementId + ':initialQuery';
+    const tileLayoutElementId = elementId + ':tileLayout';
 
     if (!contextData) {
       extensionSDK.saveContextData({});
@@ -173,6 +183,7 @@ export const TileWithFilters = () => {
 
     if (contextData[newFilterConfigElementId] && contextData[newFilterConfigElementId].length > 0) {
       setFilterConfig(contextData[newFilterConfigElementId]);
+      setIsFullScreen(contextData[tileLayoutElementId].width > 12)
     }
 
     visualizationData && setInitialQuery(visualizationData.query);
@@ -275,6 +286,7 @@ export const TileWithFilters = () => {
               model={model}
               explore={explore}
               dashboardId={dashboardId}
+              isFullScreen={isFullScreen}
             />
           </FiltersContainer>
         )}

@@ -7,14 +7,18 @@ import styled from 'styled-components';
 const FilterFlexHolder = styled.div`
 /* Auto layout */
 display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  max-width: 634px;
+  grid-template-columns: ${({ isFullScreen }) => isFullScreen ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)'};
+  max-width: 100%;
   height: auto;
+  gap: 10px;
+  margin-right: 20px; /* Add right margin */
+
 `
+//   @media (max-width: 800px) {
+//     grid-template-columns: ${({ isFullScreen }) => isFullScreen ? 'repeat(auto-fit, minmax(150px, 1fr))' : 'repeat(auto-fit, minmax(300px, 1fr))'};
+//   }
 
-
-export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, filterValues, setFilterValues, model, explore, dashboardId }) => {
+export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, filterValues, setFilterValues, model, explore, dashboardId, isFullScreen }) => {
 	const {
 		core40SDK,
 	} = useContext(ExtensionContext);
@@ -22,7 +26,7 @@ export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, fil
 	const [nameForAllCategories, setNameForAllCategories] = useState('');
 	const [selectedField, setSelectedField] = useState('');
 	const [configuredDashboardFilters, setConfiguredDashboardFilters] = useState([]);
-
+    console.log('is full screen:', isFullScreen);
 	useEffect(() => {
 		// Fetch eligible filter fields from the Looker API
 		// console.log('Fetching dashboard filter configs')
@@ -103,7 +107,7 @@ export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, fil
 				</SpaceVertical>)
 			}
 			{filterConfig && (
-				<FilterFlexHolder>
+				<FilterFlexHolder isFullScreen={isFullScreen}>
 					{filterConfig.map((filter, index) => {
 						const filterKey = filter.dimension ? `${filter.dimension}` : `${filter.measure}`;
 

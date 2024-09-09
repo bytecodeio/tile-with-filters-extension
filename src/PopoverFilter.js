@@ -4,7 +4,6 @@ import { CustomArrowIcon } from './CustomArrowIcon';
 import { Filter, useExpressionState, useSuggestable } from '@looker/filter-components';
 import styled from 'styled-components';
 import './customStyles.css';
-import { set } from 'lodash';
 
 
 const FlexButton = styled.button`
@@ -53,6 +52,7 @@ export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression, n
 
   // useRef for previous values
   const previousValues = useRef();
+  const popoverRef = useRef();
 
   const { errorMessage, suggestableProps } = useSuggestable({
     filter,
@@ -85,36 +85,41 @@ export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression, n
       const valueArray = value.split(',');
       console.log('0. starting valuearray, previous, name', valueArray, previousValues.current, nameForAllCategories);
       let newValue = value
-      // if the value array includes the ALL and the previousValues does not include the ALL
-      // add the ALL to the end of the possible values
-      if (valueArray?.includes(nameForAllCategories) && (!previousValues.current?.includes(nameForAllCategories) || !previousValues)) {
-        console.log('1. valueArray includes nameForAllCategories:', valueArray);
-        newValue = suggestions.join(',') + ',' + nameForAllCategories;
-      }
-      // if the value array does not include the ALL and the previousValues includes the ALL
-      // remove all values and set to empty string
-      else if (!valueArray?.includes(nameForAllCategories) && previousValues.current?.includes(nameForAllCategories)) {
-        console.log('2. valueArray does not include nameForAllCategories:', valueArray);
-        newValue = '';
-      } else if (previousValues.current && previousValues.current?.includes(nameForAllCategories)) {
-        const newValuesWithoutAllCategories = valueArray.filter(val => val !== nameForAllCategories);
-        console.log('3. newValuesWithoutAllCategories:', newValuesWithoutAllCategories);
-        newValue = newValuesWithoutAllCategories.join(',');
-      }
-      // Check if the values are the same as the suggestions
-      else if (valueArray.length === suggestions.length) {
-        console.log('4. valueArray matches suggestions:', valueArray);
-        newValue = suggestions.join(',') + ',' + nameForAllCategories;
-      }
-      else {
-        console.log('5. valueArray:', valueArray);
+
+      if (nameForAllCategories && nameForAllCategories.length > 0) {
+        // if the value array includes the ALL and the previousValues does not include the ALL
+        // add the ALL to the end of the possible values
+        if (valueArray?.includes(nameForAllCategories) && (!previousValues.current?.includes(nameForAllCategories) || !previousValues)) {
+          console.log('1. valueArray includes nameForAllCategories:', valueArray);
+          newValue = suggestions.join(',') + ',' + nameForAllCategories;
+        }
+        // if the value array does not include the ALL and the previousValues includes the ALL
+        // remove all values and set to empty string
+        else if (!valueArray?.includes(nameForAllCategories) && previousValues.current?.includes(nameForAllCategories)) {
+          console.log('2. valueArray does not include nameForAllCategories:', valueArray);
+          newValue = '';
+        } else if (previousValues.current && previousValues.current?.includes(nameForAllCategories)) {
+          const newValuesWithoutAllCategories = valueArray.filter(val => val !== nameForAllCategories);
+          console.log('3. newValuesWithoutAllCategories:', newValuesWithoutAllCategories);
+          newValue = newValuesWithoutAllCategories.join(',');
+        }
+        // Check if the values are the same as the suggestions
+        else if (valueArray.length === suggestions.length) {
+          console.log('4. valueArray matches suggestions:', valueArray);
+          newValue = suggestions.join(',') + ',' + nameForAllCategories;
+        }
+        else {
+          console.log('5. valueArray:', valueArray);
+        }
+      } else {
+        console.log('6. valueArray:', valueArray);
       }
       previousValues.current = newValue;
       changeHandler(newValue);
 
     } else {
       changeHandler(value);
-      previousValues.current = newValue;
+      previousValues.current = value;
     };
   }, [suggestions, changeHandler])
 
@@ -128,16 +133,6 @@ export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression, n
   useEffect(() => {
     setStateProps(newStateProps);
   }, [suggestions])
-
-  // create an effect to watch and log the state props
-  useEffect(() => {
-    // console.log('Updated state props in Popover Filter component:', stateProps);
-  }, [stateProps]);
-
-  // track prevoius values state changes
-  useEffect(() => {
-    // console.log('Updated previous values in Popover Filter component:', previousValues);
-  }, [previousValues]);
 
   useEffect(() => {
     // console.log('Updated filter values in Popover Filter component:', expression);
@@ -158,6 +153,23 @@ export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression, n
     setIsOpen(false);
   };
 
+  const handleClickOutside = (event) => {
+    if (popoverRef.current && !popoverRef.current.contains(event.target)) {
+      setIsOpen(false);
+    }
+  }
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+  
   const fieldCountNumber = stateProps.expression ? stateProps.expression.split(',').length : 0;
 
   return (
