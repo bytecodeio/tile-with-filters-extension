@@ -8,6 +8,7 @@
     "build": "export BABEL_ENV=build && webpack --config webpack.prod.js",
     "clean": "rm -rf dist",
     "dev": "webpack-dev-server  --hot --port 8080  --config webpack.develop.js",
+    "start": "webpack-dev-server  --hot --port 8080  --config webpack.develop.js",
     "prebuild": "yarn clean"
   },
   "author": "yournamehere",

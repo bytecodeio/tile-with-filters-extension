@@ -12,11 +12,10 @@ display: grid;
   height: auto;
   gap: 10px;
   margin-right: 20px; /* Add right margin */
-
+  @media (max-width: 700px) {
+    grid-template-columns: ${({ isFullScreen }) => isFullScreen ? 'repeat(auto-fit, minmax(50px, 1fr))' : 'repeat(auto-fit, minmax(100px, 1fr))'};
+  }
 `
-//   @media (max-width: 800px) {
-//     grid-template-columns: ${({ isFullScreen }) => isFullScreen ? 'repeat(auto-fit, minmax(150px, 1fr))' : 'repeat(auto-fit, minmax(300px, 1fr))'};
-//   }
 
 export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, filterValues, setFilterValues, model, explore, dashboardId, isFullScreen }) => {
 	const {

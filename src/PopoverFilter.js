@@ -24,8 +24,15 @@ const FlexButton = styled.button`
   flex: none;
   order: 0;
   flex-grow: 1;
+  flex-shrink: 1;
   cursor: pointer;
+  overflow: hidden; /* Ensure the text does not overflow the container */
+  text-overflow: ellipsis; /* Add ellipsis when text overflows */
+  white-space: nowrap; /* Prevent text from wrapping */
 
+    @media (max-width: 700px) {
+    min-width: 50px; /* Adjust the minimum width for smaller screens */
+  }
 `;
 
 const StyledFilter = styled(Filter)`
@@ -35,6 +42,13 @@ const StyledFilter = styled(Filter)`
   border-radius: 5px;
   max-width: 313px;
   --ripple-color: #0891b3;
+`;
+
+const TextContainer = styled.span`
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-grow: 1; /* Allow the text container to grow */
 `;
 
 const FieldCount = styled.span`
@@ -193,7 +207,7 @@ export const PopoverFilter = ({ index, filter, sdk, changeHandler, expression, n
         onClose={handleClose}
       >
         <FlexButton onClick={handleClick}>
-          <span>{filter.name}</span>
+          <TextContainer>{filter.name}</TextContainer>
           <span>
             {fieldCountNumber > 0 && (
               <FieldCount>{stateProps.expression ? stateProps.expression.split(',').length : 0}</FieldCount>

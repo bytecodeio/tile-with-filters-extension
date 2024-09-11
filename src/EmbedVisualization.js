@@ -14,7 +14,7 @@ const EmbedVisualizationContainer = styled.div`
         background-color: #ffffff !important;
         border: none;
         width: calc(100vw);
-        height: calc(100vh - 50px);
+        height: calc(100vh - 55px);
     }
 `;
 
