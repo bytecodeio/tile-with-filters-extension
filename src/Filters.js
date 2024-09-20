@@ -6,16 +6,17 @@ import styled from 'styled-components';
 
 const FilterFlexHolder = styled.div`
 /* Auto layout */
-display: grid;
+  display: grid;
   grid-template-columns: ${({ isFullScreen }) => isFullScreen ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)'};
   max-width: 100%;
   height: auto;
   gap: 10px;
   margin-right: 20px; /* Add right margin */
   @media (max-width: 700px) {
-    grid-template-columns: ${({ isFullScreen }) => isFullScreen ? 'repeat(auto-fit, minmax(50px, 1fr))' : 'repeat(auto-fit, minmax(100px, 1fr))'};
+    grid-template-columns: repeat(2, 1fr);
   }
 `
+
 
 export const Filters = ({ isDashboardEditing, filterConfig, setFilterConfig, filterValues, setFilterValues, model, explore, dashboardId, isFullScreen }) => {
 	const {

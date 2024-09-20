@@ -183,7 +183,7 @@ export const TileWithFilters = () => {
 
     if (contextData[newFilterConfigElementId] && contextData[newFilterConfigElementId].length > 0) {
       setFilterConfig(contextData[newFilterConfigElementId]);
-      setIsFullScreen(contextData[tileLayoutElementId].width > 12)
+      setIsFullScreen(contextData[tileLayoutElementId].width === 24)
     }
 
     visualizationData && setInitialQuery(visualizationData.query);
